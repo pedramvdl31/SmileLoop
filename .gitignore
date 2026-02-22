@@ -1,0 +1,35 @@
+# SmileLoop .gitignore
+
+# LivePortrait clone (large, has its own repo)
+LivePortrait/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temp job data (also in liveportrait_api/.gitignore)
+liveportrait_api/jobs/*/
+
+# Preset videos (binary – too large for git)
+liveportrait_api/presets/*.mp4

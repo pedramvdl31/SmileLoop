@@ -1,0 +1,11 @@
+# Temp job folders (uploads + outputs)
+jobs/*/
+!jobs/.gitkeep
+
+# Preset videos (large binaries – don't commit to git)
+presets/*.mp4
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

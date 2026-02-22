@@ -326,16 +326,16 @@ async def _run_inference(
     ]
 
     # Build a clean env for the subprocess:
-    #  - Merge the system-level PATH so ffmpeg/ffprobe are always reachable
+    #  - On Windows, merge the system-level PATH so ffmpeg/ffprobe are reachable
     #  - Force UTF-8 I/O so Rich progress bars (with emoji) don't crash
-    #    on Windows cp1252 pipes.
     env = os.environ.copy()
     system_path = os.environ.get("PATH", "")
-    machine_path = os.popen(
-        'powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\'Path\',\'Machine\')"'
-    ).read().strip()
-    if machine_path:
-        env["PATH"] = machine_path + ";" + system_path
+    if sys.platform == "win32":
+        machine_path = os.popen(
+            'powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\'Path\',\'Machine\')"'
+        ).read().strip()
+        if machine_path:
+            env["PATH"] = machine_path + ";" + system_path
     env["PYTHONIOENCODING"] = "utf-8"
 
     proc = await asyncio.create_subprocess_exec(

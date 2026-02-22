@@ -11,11 +11,6 @@ Business flow handled here:
 """
 
 import asyncio
-import os
-# --- Force RunPod credentials and cloud mode for development ---
-os.environ["RUNPOD_API_KEY"] = "secret_smileloop_a890ff59417e46058a807c671aa8a17e.T61d334uKa0cqFPYSUBI2zJ1SIEUInzA"
-os.environ["RUNPOD_ENDPOINT_ID"] = "<your_runpod_endpoint_id>"  # TODO: Replace with your actual endpoint ID
-os.environ["INFERENCE_MODE"] = "cloud"
 import json
 import os
 import shutil

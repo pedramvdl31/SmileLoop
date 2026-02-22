@@ -1,13 +1,18 @@
 # coding: utf-8
 """
-SmileLoop – FastAPI backend  (Phase 1, local dev)
+SmileLoop – FastAPI backend
 
 Upload a portrait → pick a preset motion → get an animated MP4.
 Wraps KlingAIResearch/LivePortrait inference without modifying its code.
 
-Business flow handled here:
-  POST /animate  →  returns watermarked preview  (free)
-  GET  /download/{job_id}  →  returns clean MP4   (pay-gated later)
+Inference modes (set via INFERENCE_MODE env var or ?mode= query param):
+  local  →  subprocess on the same machine (needs GPU + LivePortrait)
+  modal  →  Modal serverless GPU (pay-per-request, scales to zero)
+  cloud  →  RunPod serverless (legacy)
+
+Business flow:
+  POST /animate            →  returns MP4
+  GET  /download/{job_id}  →  returns clean MP4 (pay-gated later)
 """
 
 import asyncio
@@ -165,6 +170,7 @@ async def _startup_checks():
     global PRESETS
     PRESETS = _discover_presets()  # re-scan on startup / reload
     print(f"  SmileLoop API")
+    print(f"  Inference mode    : {os.environ.get('INFERENCE_MODE', 'local')}")
     print(f"  LivePortrait root : {LIVEPORTRAIT_ROOT}")
     print(f"  Presets dir       : {PRESETS_DIR}")
     print(f"  Presets found     : {list(PRESETS.keys()) or '⚠  NONE – add .mp4 files to presets/'}")
@@ -176,25 +182,35 @@ async def _startup_checks():
 # ---------------------------------------------------------------------------
 @app.get("/health")
 async def health():
+    inference_mode = os.environ.get("INFERENCE_MODE", "local").lower()
     return {
         "status": "ok",
+        "inference_mode": inference_mode,
         "liveportrait_found": INFERENCE_SCRIPT.exists(),
         "presets_available": [k for k, v in PRESETS.items() if v.exists()],
     }
 
 
 
-# --- Dual-mode inference: local or cloud (RunPod) ---
+# --- Tri-mode inference: local, modal, or cloud (RunPod legacy) ---
 @app.post("/animate")
 async def animate(
     source_image: UploadFile = File(..., description="Source portrait photo (JPEG or PNG, ≤ 10 MB)"),
-    preset: str = Form(..., description="Motion preset: gentle_smile | big_smile | blink"),
-    inference_mode: str = Query(None, description="local or cloud (runpod)", alias="mode")
+    preset: str = Form(..., description="Motion preset name (e.g. d6_1s, d6_5s, d6_10s)"),
+    inference_mode: str = Query(None, description="local | modal | cloud", alias="mode")
 ):
     """
     Animate a portrait with a preset motion.
-    If mode=cloud or INFERENCE_MODE=cloud, use RunPod. Otherwise, use local.
-    Returns MP4 as StreamingResponse.
+
+    Inference mode priority:
+      1. ?mode= query param
+      2. INFERENCE_MODE env var
+      3. Defaults to "local"
+
+    Modes:
+      local → subprocess on same machine (GPU required)
+      modal → Modal serverless GPU (pay-per-request)
+      cloud → RunPod serverless (legacy)
     """
     # Validate preset
     if preset not in PRESETS:
@@ -212,11 +228,27 @@ async def animate(
 
     # Decide inference mode
     mode = (inference_mode or os.environ.get("INFERENCE_MODE") or "local").lower()
-    if mode not in ("local", "cloud"):
-        raise HTTPException(status_code=400, detail="mode must be 'local' or 'cloud'")
+    if mode not in ("local", "modal", "cloud"):
+        raise HTTPException(status_code=400, detail="mode must be 'local', 'modal', or 'cloud'")
 
     t0 = time_mod.time()
-    if mode == "cloud":
+
+    if mode == "modal":
+        # --- Modal serverless GPU inference ---
+        try:
+            from liveportrait_api.modal_client import run_job as modal_run_job, ModalError
+            driving_path = PRESETS.get(preset)
+            mp4_bytes = modal_run_job(contents, preset, driving_video_path=driving_path)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Modal error: {e}")
+        t1 = time_mod.time()
+        return StreamingResponse(
+            io.BytesIO(mp4_bytes),
+            media_type="video/mp4",
+            headers={"X-Inference-Mode": "modal", "X-Inference-Time": f"{t1-t0:.2f}s"},
+        )
+
+    elif mode == "cloud":
         # --- RunPod cloud inference ---
         try:
             spec = importlib.util.find_spec("liveportrait_api.runpod_client")

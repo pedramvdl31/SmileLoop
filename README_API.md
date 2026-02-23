@@ -13,21 +13,21 @@ Client → FastAPI (/animate) → Inference Backend → MP4
 
 Three inference backends are supported:
 
-| Mode    | Description                          | Cost Model         |
-|---------|--------------------------------------|--------------------|
-| `local` | Subprocess on same machine (GPU)     | Fixed server cost   |
-| `modal` | Modal serverless GPU (recommended)   | Pay-per-request     |
-| `cloud` | RunPod serverless (legacy)           | Pay-per-request     |
+| Mode    | Description                        | Cost Model        |
+| ------- | ---------------------------------- | ----------------- |
+| `local` | Subprocess on same machine (GPU)   | Fixed server cost |
+| `modal` | Modal serverless GPU (recommended) | Pay-per-request   |
+| `cloud` | RunPod serverless (legacy)         | Pay-per-request   |
 
 ## Environment Variables
 
-| Variable            | Default   | Description                                    |
-|---------------------|-----------|------------------------------------------------|
-| `INFERENCE_MODE`    | `local`   | Default inference backend: `local`, `modal`, `cloud` |
-| `LIVEPORTRAIT_ROOT` | `./LivePortrait` | Path to LivePortrait repo (local mode only) |
-| `RUNPOD_API_KEY`    | —         | RunPod API key (cloud mode only)               |
-| `RUNPOD_ENDPOINT_ID`| —         | RunPod endpoint ID (cloud mode only)           |
-| `MODAL_APP_NAME`    | `smileloop-liveportrait` | Modal app name              |
+| Variable             | Default                  | Description                                          |
+| -------------------- | ------------------------ | ---------------------------------------------------- |
+| `INFERENCE_MODE`     | `local`                  | Default inference backend: `local`, `modal`, `cloud` |
+| `LIVEPORTRAIT_ROOT`  | `./LivePortrait`         | Path to LivePortrait repo (local mode only)          |
+| `RUNPOD_API_KEY`     | —                        | RunPod API key (cloud mode only)                     |
+| `RUNPOD_ENDPOINT_ID` | —                        | RunPod endpoint ID (cloud mode only)                 |
+| `MODAL_APP_NAME`     | `smileloop-liveportrait` | Modal app name                                       |
 
 ## Quick Start
 
@@ -103,6 +103,7 @@ curl http://localhost:8000/health
 Animate a portrait photo with a motion preset.
 
 **Parameters:**
+
 - `source_image` (file): JPEG or PNG portrait photo (≤ 10 MB)
 - `preset` (form): Motion preset name (e.g. `d6_1s`, `d6_5s`, `d6_10s`)
 - `mode` (query, optional): Override inference mode (`local`, `modal`, `cloud`)
@@ -110,6 +111,7 @@ Animate a portrait photo with a motion preset.
 **Response:** MP4 video file
 
 **Response Headers:**
+
 - `X-Inference-Mode`: Which backend was used
 - `X-Inference-Time`: How long inference took
 
@@ -179,8 +181,8 @@ liveportrait_api/
 
 ## Cost Comparison
 
-| Approach              | Idle Cost | Per-Request Cost | Cold Start |
-|-----------------------|-----------|------------------|------------|
-| Always-on GPU server  | ~$0.75/hr | Included         | None       |
-| Modal serverless      | $0       | ~$0.01-0.05      | ~30s first |
-| RunPod serverless     | $0       | ~$0.01-0.05      | ~30s first |
+| Approach             | Idle Cost | Per-Request Cost | Cold Start |
+| -------------------- | --------- | ---------------- | ---------- |
+| Always-on GPU server | ~$0.75/hr | Included         | None       |
+| Modal serverless     | $0        | ~$0.01-0.05      | ~30s first |
+| RunPod serverless    | $0        | ~$0.01-0.05      | ~30s first |

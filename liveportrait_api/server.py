@@ -1,21 +1,18 @@
 # coding: utf-8
 """
-SmileLoop – FastAPI backend
+SmileLoop - FastAPI backend
 
-Upload a portrait → pick a preset motion → get an animated MP4.
+Upload a portrait, pick a preset motion, get an animated MP4.
 Wraps KlingAIResearch/LivePortrait inference without modifying its code.
 
-Inference modes (set via INFERENCE_MODE env var or ?mode= query param):
-  local  →  subprocess on the same machine (needs GPU + LivePortrait)
-  modal  →  Modal serverless GPU (pay-per-request, scales to zero)
-  cloud  →  RunPod serverless (legacy)
-
-Business flow:
-  POST /animate            →  returns MP4
-  GET  /download/{job_id}  →  returns clean MP4 (pay-gated later)
+Inference modes (set via CLI --mode, INFERENCE_MODE env var, or ?mode= query):
+  local  - subprocess on the same machine (needs GPU + LivePortrait)
+  modal  - Modal serverless GPU (pay-per-request, scales to zero)
+  cloud  - RunPod serverless (legacy)
 """
 
 import asyncio
+import io
 import json
 import os
 import shutil
@@ -26,34 +23,26 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-import importlib.util
-import io
-import time as time_mod
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-API_DIR = Path(__file__).resolve().parent                    # liveportrait_api/
-PROJECT_ROOT = API_DIR.parent                                # SmileLoop repo root
-PRESETS_DIR = API_DIR / "presets"                             # driving-motion clips
-JOBS_DIR = API_DIR / "jobs"                                  # temp upload + output area
+API_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = API_DIR.parent
+PRESETS_DIR = API_DIR / "presets"
+JOBS_DIR = API_DIR / "jobs"
 
-# LivePortrait repo location – set via env var, default = sibling folder
 LIVEPORTRAIT_ROOT = Path(
     os.environ.get("LIVEPORTRAIT_ROOT", str(PROJECT_ROOT / "LivePortrait"))
 ).resolve()
 INFERENCE_SCRIPT = LIVEPORTRAIT_ROOT / "inference.py"
 
 # ---------------------------------------------------------------------------
-# Preset registry – auto-discovers every .mp4 in the presets folder.
-# The preset name is the filename without extension.
-#   e.g.  presets/gentle_smile.mp4  →  preset name "gentle_smile"
-# Drop in new .mp4 files and restart the server to add more presets.
+# Preset registry - auto-discovers every .mp4 in the presets folder.
 # ---------------------------------------------------------------------------
 def _discover_presets() -> dict[str, Path]:
-    """Scan the presets directory and return {name: path} for every .mp4."""
     if not PRESETS_DIR.exists():
         return {}
     return {f.stem: f for f in sorted(PRESETS_DIR.glob("*.mp4"))}
@@ -63,10 +52,10 @@ PRESETS = _discover_presets()
 # ---------------------------------------------------------------------------
 # Constraints
 # ---------------------------------------------------------------------------
-MAX_FILE_SIZE = 10 * 1024 * 1024          # 10 MB
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAGIC_JPEG = b"\xff\xd8\xff"
-MAGIC_PNG  = b"\x89PNG\r\n\x1a\n"
-JOB_TTL_SECONDS = 60 * 60                # auto-delete jobs older than 1 hour
+MAGIC_PNG = b"\x89PNG\r\n\x1a\n"
+JOB_TTL_SECONDS = 60 * 60  # 1 hour
 
 # ---------------------------------------------------------------------------
 # Single-job GPU lock
@@ -77,9 +66,8 @@ _gpu_lock = asyncio.Lock()
 # Background job cleanup
 # ---------------------------------------------------------------------------
 async def _cleanup_old_jobs():
-    """Periodically delete job folders older than JOB_TTL_SECONDS."""
     while True:
-        await asyncio.sleep(300)  # check every 5 min
+        await asyncio.sleep(300)
         if not JOBS_DIR.exists():
             continue
         cutoff = time.time() - JOB_TTL_SECONDS
@@ -87,32 +75,31 @@ async def _cleanup_old_jobs():
             if child.is_dir() and child.name != ".gitkeep":
                 try:
                     meta = child / "job.json"
-                    if meta.exists():
-                        created = json.loads(meta.read_text()).get("created", 0)
-                    else:
-                        created = child.stat().st_mtime
+                    created = (
+                        json.loads(meta.read_text()).get("created", 0)
+                        if meta.exists()
+                        else child.stat().st_mtime
+                    )
                     if created < cutoff:
                         shutil.rmtree(child, ignore_errors=True)
                 except Exception:
                     pass
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start background cleanup task on boot, cancel on shutdown."""
     task = asyncio.create_task(_cleanup_old_jobs())
     yield
     task.cancel()
+
 
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title="SmileLoop API",
-    version="0.1.0",
-    description=(
-        "Upload a portrait photo, pick a smile/blink preset, "
-        "get an animated MP4 in seconds."
-    ),
+    version="0.2.0",
+    description="Upload a portrait photo, pick a motion preset, get an animated MP4.",
     lifespan=lifespan,
 )
 
@@ -120,99 +107,127 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _validate_image_bytes(header_bytes: bytes) -> str:
-    """Return detected extension ('jpg'|'png') or raise 415."""
-    if header_bytes[:3] == MAGIC_JPEG:
+_VALID_MODES = ("local", "modal", "cloud")
+_runtime_mode: str = os.environ.get("INFERENCE_MODE", "local").lower()
+
+
+def _get_default_mode() -> str:
+    return _runtime_mode
+
+
+def _validate_image_bytes(header: bytes) -> str:
+    if header[:3] == MAGIC_JPEG:
         return "jpg"
-    if header_bytes[:8] == MAGIC_PNG:
+    if header[:8] == MAGIC_PNG:
         return "png"
-    raise HTTPException(
-        status_code=415,
-        detail="Unsupported image type. Only JPEG and PNG are accepted "
-               "(validated by file header magic bytes).",
-    )
+    raise HTTPException(status_code=415, detail="Only JPEG and PNG images are accepted.")
 
 
 def _write_job_meta(job_dir: Path, **kwargs):
-    """Persist lightweight job metadata as JSON."""
-    meta_path = job_dir / "job.json"
-    data = {"created": time.time()}
-    data.update(kwargs)
-    meta_path.write_text(json.dumps(data))
+    data = {"created": time.time(), **kwargs}
+    (job_dir / "job.json").write_text(json.dumps(data))
 
 
 def _find_result_mp4(output_dir: Path) -> Optional[Path]:
-    """
-    Locate the clean (non-concat) MP4 that LivePortrait produces.
-    LivePortrait naming:  <source_stem>--<driving_stem>.mp4
-                          <source_stem>--<driving_stem>_concat.mp4
-    """
     mp4s = sorted(output_dir.glob("*.mp4"))
     non_concat = [f for f in mp4s if "_concat" not in f.stem]
-    if non_concat:
-        return non_concat[0]
-    return mp4s[0] if mp4s else None
+    return (non_concat or mp4s or [None])[0]
 
 
 # ---------------------------------------------------------------------------
-# Startup check
+# Startup
 # ---------------------------------------------------------------------------
 @app.on_event("startup")
-async def _startup_checks():
+async def _startup():
     if not INFERENCE_SCRIPT.exists():
         print(
-            f"⚠  WARNING: LivePortrait inference.py not found at "
-            f"{INFERENCE_SCRIPT}\n"
-            f"   Set the LIVEPORTRAIT_ROOT env var to the LivePortrait repo path.",
+            f"WARNING: LivePortrait not found at {INFERENCE_SCRIPT}\n"
+            f"   Set LIVEPORTRAIT_ROOT env var to fix this.",
             file=sys.stderr,
         )
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
     global PRESETS
-    PRESETS = _discover_presets()  # re-scan on startup / reload
-    print(f"  SmileLoop API")
-    print(f"  Inference mode    : {os.environ.get('INFERENCE_MODE', 'local')}")
-    print(f"  LivePortrait root : {LIVEPORTRAIT_ROOT}")
-    print(f"  Presets dir       : {PRESETS_DIR}")
-    print(f"  Presets found     : {list(PRESETS.keys()) or '⚠  NONE – add .mp4 files to presets/'}")
-    print(f"  Jobs dir          : {JOBS_DIR}")
+    PRESETS = _discover_presets()
+    mode = _get_default_mode()
+    print()
+    print(f"  +==========================================+")
+    print(f"  |  SmileLoop API                           |")
+    print(f"  |  Mode: {mode:<35s}|")
+    print(f"  +==========================================+")
+    print(f"  LivePortrait : {LIVEPORTRAIT_ROOT}")
+    print(f"  Presets      : {list(PRESETS.keys()) or 'NONE'}")
+    print()
+
+
+# Add a global counter for sequential output naming
+output_counter_file = JOBS_DIR / "output_counter.txt"
+if not output_counter_file.exists():
+    output_counter_file.write_text("0")
+
+def _get_next_output_number() -> int:
+    """Retrieve and increment the output counter."""
+    with output_counter_file.open("r+") as f:
+        current_number = int(f.read().strip())
+        next_number = current_number + 1
+        f.seek(0)
+        f.write(str(next_number))
+        f.truncate()
+    return next_number
 
 
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+def _refresh_presets():
+    global PRESETS
+    PRESETS = _discover_presets()
+
+
 @app.get("/health")
 async def health():
-    inference_mode = os.environ.get("INFERENCE_MODE", "local").lower()
+    _refresh_presets()
     return {
         "status": "ok",
-        "inference_mode": inference_mode,
+        "inference_mode": _get_default_mode(),
         "liveportrait_found": INFERENCE_SCRIPT.exists(),
         "presets_available": [k for k, v in PRESETS.items() if v.exists()],
     }
 
 
+@app.get("/mode")
+async def get_mode():
+    """Get the current default inference mode."""
+    return {"mode": _get_default_mode()}
 
-# --- Tri-mode inference: local, modal, or cloud (RunPod legacy) ---
+
+@app.post("/mode/{new_mode}")
+async def set_mode(new_mode: str):
+    """Change the default inference mode at runtime (no restart needed)."""
+    global _runtime_mode
+    new_mode = new_mode.lower()
+    if new_mode not in _VALID_MODES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid mode '{new_mode}'. Choose from: {', '.join(_VALID_MODES)}",
+        )
+    old = _runtime_mode
+    _runtime_mode = new_mode
+    print(f"  Mode changed: {old} -> {new_mode}")
+    return {"mode": new_mode, "previous": old}
+
+
 @app.post("/animate")
 async def animate(
-    source_image: UploadFile = File(..., description="Source portrait photo (JPEG or PNG, ≤ 10 MB)"),
-    preset: str = Form(..., description="Motion preset name (e.g. d6_1s, d6_5s, d6_10s)"),
-    inference_mode: str = Query(None, description="local | modal | cloud", alias="mode")
+    source_image: UploadFile = File(..., description="Portrait photo (JPEG/PNG, max 10 MB)"),
+    preset: str = Form(..., description="Motion preset name"),
+    inference_mode: str = Query(None, description="local | modal | cloud", alias="mode"),
 ):
     """
     Animate a portrait with a preset motion.
 
-    Inference mode priority:
-      1. ?mode= query param
-      2. INFERENCE_MODE env var
-      3. Defaults to "local"
-
-    Modes:
-      local → subprocess on same machine (GPU required)
-      modal → Modal serverless GPU (pay-per-request)
-      cloud → RunPod serverless (legacy)
+    Mode priority: ?mode= query param > INFERENCE_MODE env var > "local"
     """
-    # Validate preset
+    _refresh_presets()
     if preset not in PRESETS:
         raise HTTPException(
             status_code=422,
@@ -221,114 +236,121 @@ async def animate(
 
     contents = await source_image.read()
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail=f"File too large ({len(contents):,} bytes). Maximum is {MAX_FILE_SIZE:,} bytes (10 MB).")
-    if len(contents) == 0:
+        raise HTTPException(status_code=413, detail=f"File too large ({len(contents):,} B). Max 10 MB.")
+    if not contents:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
     ext = _validate_image_bytes(contents[:16])
 
-    # Decide inference mode
-    mode = (inference_mode or os.environ.get("INFERENCE_MODE") or "local").lower()
-    if mode not in ("local", "modal", "cloud"):
-        raise HTTPException(status_code=400, detail="mode must be 'local', 'modal', or 'cloud'")
+    mode = (inference_mode or _get_default_mode()).lower()
+    if mode not in _VALID_MODES:
+        raise HTTPException(status_code=400, detail=f"mode must be one of: {', '.join(_VALID_MODES)}")
 
-    t0 = time_mod.time()
+    t0 = time.time()
+    job_id = uuid.uuid4().hex[:8]
 
+    # ------------------------------------------------------------------
+    # Modal serverless GPU
+    # ------------------------------------------------------------------
     if mode == "modal":
-        # --- Modal serverless GPU inference ---
         try:
-            from liveportrait_api.modal_client import run_job as modal_run_job, ModalError
-            driving_path = PRESETS.get(preset)
-            mp4_bytes = modal_run_job(contents, preset, driving_video_path=driving_path)
+            from liveportrait_api.modal_client import ModalError, run_job as modal_run_job
+            mp4_bytes = modal_run_job(contents, preset, driving_video_path=PRESETS.get(preset))
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Modal error: {e}")
-        t1 = time_mod.time()
+        output_number = _get_next_output_number()
+        filename = f"output_{output_number}.mp4"
+        elapsed_time = f"{time.time()-t0:.2f}s"
         return StreamingResponse(
             io.BytesIO(mp4_bytes),
             media_type="video/mp4",
-            headers={"X-Inference-Mode": "modal", "X-Inference-Time": f"{t1-t0:.2f}s"},
+            headers={
+                "X-Inference-Mode": "modal",
+                "X-Inference-Time": elapsed_time,
+                "Content-Disposition": f'attachment; filename="{filename}"',
+            },
         )
 
-    elif mode == "cloud":
-        # --- RunPod cloud inference ---
+    # ------------------------------------------------------------------
+    # RunPod cloud (legacy)
+    # ------------------------------------------------------------------
+    if mode == "cloud":
         try:
-            spec = importlib.util.find_spec("liveportrait_api.runpod_client")
-            if not spec:
-                raise ImportError("runpod_client.py not found")
-            runpod_client = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(runpod_client)
-            mp4_bytes = runpod_client.run_job(contents, preset)
+            from liveportrait_api.runpod_client import RunPodError, run_job as runpod_run_job
+            mp4_bytes = runpod_run_job(contents, preset)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"RunPod error: {e}")
-        t1 = time_mod.time()
-        return StreamingResponse(io.BytesIO(mp4_bytes), media_type="video/mp4", headers={"X-Inference-Mode": "cloud", "X-Inference-Time": str(t1-t0)})
-    else:
-        # --- Local inference (original pipeline) ---
-        job_id = uuid.uuid4().hex
-        job_dir = JOBS_DIR / job_id
-        job_dir.mkdir(parents=True, exist_ok=True)
-        source_path = job_dir / f"source.{ext}"
-        output_dir  = job_dir / "output"
-        output_dir.mkdir(exist_ok=True)
-        source_path.write_bytes(contents)
-        _write_job_meta(job_dir, job_id=job_id, preset=preset, status="queued")
-        driving_path = PRESETS[preset]
-        if not driving_path.exists():
-            raise HTTPException(status_code=404, detail=f"Driving video for preset '{preset}' is missing on the server. Please add it to {PRESETS_DIR}.")
-        if not INFERENCE_SCRIPT.exists():
-            raise HTTPException(status_code=503, detail="LivePortrait inference engine is not configured. Set LIVEPORTRAIT_ROOT env var.")
-        async with _gpu_lock:
-            _write_job_meta(job_dir, job_id=job_id, preset=preset, status="running")
-            result_path = await _run_inference(source_path, driving_path, output_dir)
-        if result_path is None or not result_path.exists():
-            _write_job_meta(job_dir, job_id=job_id, preset=preset, status="failed")
-            raise HTTPException(status_code=500, detail="Animation failed – no output produced. Check server logs.")
-        _write_job_meta(job_dir, job_id=job_id, preset=preset, status="done", result_file=result_path.name)
-        t1 = time_mod.time()
-        return FileResponse(
-            path=str(result_path),
+        output_number = _get_next_output_number()
+        filename = f"output_{output_number}.mp4"
+        elapsed_time = f"{time.time()-t0:.2f}s"
+        return StreamingResponse(
+            io.BytesIO(mp4_bytes),
             media_type="video/mp4",
-            filename=f"smileloop_{job_id[:8]}.mp4",
-            headers={"X-Inference-Mode": "local", "X-Inference-Time": str(t1-t0)}
+            headers={
+                "X-Inference-Mode": "cloud",
+                "X-Inference-Time": elapsed_time,
+                "Content-Disposition": f'attachment; filename="{filename}"',
+            },
         )
+
+    # ------------------------------------------------------------------
+    # Local inference (GPU subprocess)
+    # ------------------------------------------------------------------
+    local_job_id = uuid.uuid4().hex
+    job_dir = JOBS_DIR / local_job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    source_path = job_dir / f"source.{ext}"
+    output_dir = job_dir / "output"
+    output_dir.mkdir(exist_ok=True)
+    source_path.write_bytes(contents)
+    _write_job_meta(job_dir, job_id=local_job_id, preset=preset, status="queued")
+
+    driving_path = PRESETS[preset]
+    if not driving_path.exists():
+        raise HTTPException(status_code=404, detail=f"Driving video for preset '{preset}' missing.")
+    if not INFERENCE_SCRIPT.exists():
+        raise HTTPException(status_code=503, detail="LivePortrait not configured. Set LIVEPORTRAIT_ROOT.")
+
+    async with _gpu_lock:
+        _write_job_meta(job_dir, job_id=local_job_id, preset=preset, status="running")
+        result_path = await _run_inference(source_path, driving_path, output_dir)
+
+    if not result_path or not result_path.exists():
+        _write_job_meta(job_dir, job_id=local_job_id, preset=preset, status="failed")
+        raise HTTPException(status_code=500, detail="Animation failed - no output produced.")
+
+    _write_job_meta(job_dir, job_id=local_job_id, preset=preset, status="done", result_file=result_path.name)
+    output_number = _get_next_output_number()
+    filename = f"output_{output_number}.mp4"
+    elapsed_time = f"{time.time()-t0:.2f}s"
+    return FileResponse(
+        path=str(result_path),
+        media_type="video/mp4",
+        filename=filename,
+        headers={"X-Inference-Mode": "local", "X-Inference-Time": elapsed_time},
+    )
 
 
 @app.get("/download/{job_id}")
 async def download(job_id: str):
-    """
-    Download the animated MP4 for a completed job.
-
-    Phase 2 will add payment verification before serving the clean file.
-    For now this returns the clean (un-watermarked) result directly.
-    """
+    """Download the animated MP4 for a completed local job."""
     job_dir = JOBS_DIR / job_id
     if not job_dir.exists():
         raise HTTPException(status_code=404, detail="Job not found or expired.")
-
     meta_path = job_dir / "job.json"
     if not meta_path.exists():
         raise HTTPException(status_code=404, detail="Job metadata missing.")
-
     meta = json.loads(meta_path.read_text())
     if meta.get("status") != "done":
-        raise HTTPException(
-            status_code=409,
-            detail=f"Job is not ready (status: {meta.get('status')}).",
-        )
-
+        raise HTTPException(status_code=409, detail=f"Job not ready (status: {meta.get('status')}).")
     result_path = job_dir / "output" / meta["result_file"]
     if not result_path.exists():
         raise HTTPException(status_code=410, detail="Result file has been cleaned up.")
-
-    return FileResponse(
-        path=str(result_path),
-        media_type="video/mp4",
-        filename=f"smileloop_{job_id[:8]}.mp4",
-    )
+    return FileResponse(path=str(result_path), media_type="video/mp4", filename=f"smileloop_{job_id[:8]}.mp4")
 
 
 @app.get("/job/{job_id}")
 async def job_status(job_id: str):
-    """Check the status of a job."""
+    """Check the status of a local job."""
     job_dir = JOBS_DIR / job_id
     if not job_dir.exists():
         raise HTTPException(status_code=404, detail="Job not found or expired.")
@@ -339,15 +361,9 @@ async def job_status(job_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Inference subprocess
+# Inference subprocess (local mode)
 # ---------------------------------------------------------------------------
-async def _run_inference(
-    source: Path, driving: Path, output_dir: Path
-) -> Optional[Path]:
-    """
-    Shell out to LivePortrait inference.py and return the path to the
-    produced MP4 (the non-concat paste-back version).
-    """
+async def _run_inference(source: Path, driving: Path, output_dir: Path) -> Optional[Path]:
     cmd = [
         sys.executable,
         str(INFERENCE_SCRIPT),
@@ -357,17 +373,14 @@ async def _run_inference(
         "--flag_crop_driving_video",
     ]
 
-    # Build a clean env for the subprocess:
-    #  - On Windows, merge the system-level PATH so ffmpeg/ffprobe are reachable
-    #  - Force UTF-8 I/O so Rich progress bars (with emoji) don't crash
     env = os.environ.copy()
-    system_path = os.environ.get("PATH", "")
     if sys.platform == "win32":
         machine_path = os.popen(
-            'powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\'Path\',\'Machine\')"'
+            'powershell -NoProfile -Command '
+            '"[System.Environment]::GetEnvironmentVariable(\'Path\',\'Machine\')"'
         ).read().strip()
         if machine_path:
-            env["PATH"] = machine_path + ";" + system_path
+            env["PATH"] = machine_path + ";" + env.get("PATH", "")
     env["PYTHONIOENCODING"] = "utf-8"
 
     proc = await asyncio.create_subprocess_exec(
@@ -380,7 +393,7 @@ async def _run_inference(
     stdout, stderr = await proc.communicate()
 
     if proc.returncode != 0:
-        print("=== LivePortrait inference FAILED ===", file=sys.stderr)
+        print("=== LivePortrait FAILED ===", file=sys.stderr)
         print(stderr.decode(errors="replace"), file=sys.stderr)
         return None
 

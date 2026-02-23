@@ -41,6 +41,9 @@ liveportrait_image = (
         "rich>=13.0.0",
         "ffmpeg-python>=0.2.0",
         "tyro>=0.7.0",
+        "requests>=2.28.0",
+        "pykalman>=0.9.7",
+        "transformers>=4.38.0",
     )
     .run_commands(
         # Clone LivePortrait

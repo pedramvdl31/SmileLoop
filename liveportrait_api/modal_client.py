@@ -28,8 +28,8 @@ def _get_modal_function():
     """
     try:
         import modal
-        cls = modal.Cls.from_name(MODAL_APP_NAME, "run_liveportrait")
-        return cls
+        fn = modal.Function.from_name(MODAL_APP_NAME, "run_liveportrait")
+        return fn
     except ImportError:
         raise ModalError(
             "The 'modal' package is not installed. "
@@ -61,13 +61,7 @@ def run_job(
     Raises:
         ModalError: If the Modal call fails for any reason.
     """
-    try:
-        from liveportrait_api.modal_liveportrait import run_liveportrait
-    except ImportError:
-        raise ModalError(
-            "Could not import modal_liveportrait. "
-            "Ensure modal is installed and the app is deployed."
-        )
+    fn = _get_modal_function()
 
     # Read driving video bytes if path is provided
     driving_video_bytes = None
@@ -75,11 +69,13 @@ def run_job(
         driving_video_bytes = driving_video_path.read_bytes()
 
     try:
-        mp4_bytes = run_liveportrait.remote(
+        mp4_bytes = fn.remote(
             image_bytes,
             preset,
             driving_video_bytes=driving_video_bytes,
         )
+    except ModalError:
+        raise
     except Exception as e:
         raise ModalError(f"Modal inference failed: {e}")
 

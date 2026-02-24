@@ -337,12 +337,12 @@ async def animate(
 async def animate_svd(
     source_image: UploadFile = File(..., description="Portrait or any image (JPEG/PNG, max 10 MB)"),
     num_frames: int = Form(25, description="Number of frames to generate (default 25)"),
-    num_inference_steps: int = Form(30, description="Diffusion steps — more = better quality (default 30)"),
+    num_inference_steps: int = Form(50, description="Diffusion steps — more = better quality (default 50)"),
     fps: int = Form(7, description="Output video FPS (default 7 → ~3.5s clip)"),
-    motion_bucket_id: int = Form(120, description="Motion amount 1-255 (default 120 = moderate, portrait-safe)"),
-    noise_aug_strength: float = Form(0.06, description="Augmentation level (default 0.06 = low, preserves face identity)"),
+    motion_bucket_id: int = Form(100, description="Motion amount 1-255 (default 100 = moderate, reduces camera shake)"),
+    noise_aug_strength: float = Form(0.04, description="Augmentation level (default 0.04 = low, anchors face identity)"),
     min_guidance_scale: float = Form(1.0, description="CFG guidance on first frame (default 1.0)"),
-    max_guidance_scale: float = Form(5.0, description="CFG guidance on last frame (default 5.0). Higher = anchors face identity."),
+    max_guidance_scale: float = Form(3.5, description="CFG guidance on last frame (default 3.5 — lower prevents color ringing)"),
     seed: int = Form(12345, description="RNG seed for reproducibility (default 12345)"),
     letterbox: bool = Form(False, description="If true, pad with blurred background instead of cropping"),
 ):

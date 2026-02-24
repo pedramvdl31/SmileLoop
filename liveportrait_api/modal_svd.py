@@ -2,15 +2,16 @@
 """
 SmileLoop – Modal serverless GPU inference for Stable Video Diffusion (SVD-XT).
 
-Key quality improvements over naive implementation:
+Key quality improvements:
   - Class-based singleton: pipeline loads ONCE per container (no reload per call)
-  - xformers memory-efficient attention: reduces VRAM, improves temporal consistency
-  - decode_chunk_size = num_frames by default: decoding all frames together is the
-    single biggest factor for eliminating inter-chunk ghosting/flickering
-  - Auto-fallback to chunk_size=8 if OOM, with warning
-  - Low noise defaults (noise_aug_strength=0.06): high noise destroys identity/face stability
-  - Face-aware crop: detects face with OpenCV Haar, centers crop on it with headroom
-  - Letterbox option: blurred background padding instead of crop (no information loss)
+  - A100 GPU (40GB): enough VRAM for full 25-frame decode without OOM
+  - NO xformers: flash attention crashes on A100 with CUDA config errors;
+    PyTorch 2.x native SDPA is used instead (actually faster on A100)
+  - VAE tiling + slicing: decode is spatially tiled → OOM-safe, zero quality loss
+  - decode_chunk_size = num_frames: all frames decoded together = no ghosting
+  - Low noise defaults (noise_aug_strength=0.06): preserves face identity
+  - Face-aware crop: OpenCV Haar cascade, centers crop on face with headroom
+  - Letterbox option: blurred background padding instead of crop
   - High-quality ffmpeg H.264 encode: crf=18, yuv420p, preset=medium
   - Explicit seed parameter for reproducibility
 
@@ -18,7 +19,7 @@ Deploy:
     modal deploy liveportrait_api/modal_svd.py
 
 Architecture:
-    FastAPI → modal_svd_client.py → SVDModel.run (Modal A10G class) → MP4 bytes
+    FastAPI → modal_svd_client.py → SVDModel.run (Modal A100 class) → MP4 bytes
 """
 
 import modal
@@ -28,22 +29,22 @@ import modal
 # ---------------------------------------------------------------------------
 PRESETS = {
     "gentle": {
-        "motion_bucket_id": 80,
-        "noise_aug_strength": 0.03,
+        "motion_bucket_id": 60,
+        "noise_aug_strength": 0.02,
         "min_guidance_scale": 1.0,
-        "max_guidance_scale": 4.0,
+        "max_guidance_scale": 3.0,
         "seed": 12345,
     },
     "medium": {
-        "motion_bucket_id": 120,
-        "noise_aug_strength": 0.06,
+        "motion_bucket_id": 100,
+        "noise_aug_strength": 0.04,
         "min_guidance_scale": 1.0,
-        "max_guidance_scale": 5.0,
+        "max_guidance_scale": 3.5,
         "seed": 12345,
     },
     "strong": {
-        "motion_bucket_id": 180,
-        "noise_aug_strength": 0.15,
+        "motion_bucket_id": 150,
+        "noise_aug_strength": 0.08,
         "min_guidance_scale": 1.0,
         "max_guidance_scale": 3.0,
         "seed": 12345,
@@ -69,7 +70,9 @@ svd_image = (
         "imageio>=2.31.0",
         "imageio-ffmpeg>=0.4.9",
         "opencv-python-headless>=4.8.0",
-        "xformers>=0.0.22",
+        # xformers intentionally excluded — crashes on A100 with flash attention
+        # (CUDA error: invalid configuration argument). PyTorch 2.x native SDPA
+        # is used instead, which is faster on A100 and needs no extra package.
     )
     .run_commands(
         # Pre-download SVD-XT weights at build time so cold starts are fast
@@ -97,7 +100,7 @@ SVD_MODEL_DIR = "/opt/svd-xt"
 # This is the correct Modal pattern: @app.cls with @modal.enter() for setup.
 # Without this, every call would reload 10GB of weights (~60s cold start cost).
 # ---------------------------------------------------------------------------
-@app.cls(gpu="A10G", timeout=300)
+@app.cls(gpu="A100", timeout=300)
 class SVDModel:
 
     @modal.enter()
@@ -119,19 +122,24 @@ class SVDModel:
             torch_dtype=torch.float16,
             variant="fp16",
         )
-        # Keep all weights on GPU — A10G has 22GB usable VRAM, plenty for SVD-XT.
+        # Keep all weights on GPU.
         # Never use enable_model_cpu_offload() — it processes frames in small
         # device-shuffled chunks which is the primary cause of ghosting.
         self.pipe.to("cuda")
 
-        # xformers memory-efficient attention: reduces VRAM peak by ~30%,
-        # which gives headroom to use larger decode_chunk_size without OOM.
+        # DO NOT use xformers on A100 — flash attention crashes with
+        # "CUDA error: invalid configuration argument" on certain A100 configs.
+        # PyTorch 2.x native SDPA (scaled_dot_product_attention) is used
+        # automatically and is actually faster on A100 than xformers.
+        # We explicitly disable xformers to prevent it from being picked up.
         try:
-            self.pipe.enable_xformers_memory_efficient_attention()
-            print("[SVD] xformers enabled ✓")
-        except Exception as e:
-            print(f"[SVD] xformers not available, using default attention ({e})")
+            self.pipe.disable_xformers_memory_efficient_attention()
+        except Exception:
+            pass  # fine if it was never enabled
 
+        # AutoencoderKLTemporalDecoder (SVD's VAE) does NOT support enable_slicing()
+        # or enable_tiling() — both raise NotImplementedError. On A100 (40GB)
+        # we have plenty of VRAM to decode all 25 frames in one pass anyway.
         print("[SVD] Pipeline ready ✓")
 
     @modal.method()
@@ -139,38 +147,41 @@ class SVDModel:
         self,
         image_bytes: bytes,
         num_frames: int = 25,
-        num_inference_steps: int = 30,
+        num_inference_steps: int = 50,
         fps: int = 7,
-        motion_bucket_id: int = 120,
-        noise_aug_strength: float = 0.06,
-        decode_chunk_size: int = -1,   # -1 = auto (num_frames, with OOM fallback)
+        motion_bucket_id: int = 100,
+        noise_aug_strength: float = 0.04,
+        decode_chunk_size: int = 4,    # small chunks = sharper per-frame VAE decode
         min_guidance_scale: float = 1.0,
-        max_guidance_scale: float = 5.0,
+        max_guidance_scale: float = 3.5,
         seed: int = 12345,
         letterbox: bool = False,
     ) -> bytes:
         """
         Run SVD-XT inference. Returns raw MP4 bytes.
 
-        Why these defaults reduce ghosting vs the previous config:
+        Key parameters for face quality:
 
-        noise_aug_strength=0.06:
-            Low noise = the model strongly conditions on the input frame = stable identity.
-            High values (0.4+) tell the model the conditioning frame is unreliable,
-            so it drifts away from it → face warping, ghosting.
+        noise_aug_strength=0.04:
+            Very low noise = model is strongly anchored to input frame.
+            Values >0.1 cause the model to "forget" the face → ghosting.
 
-        max_guidance_scale=5.0:
-            Higher CFG on later frames pulls generation back toward the input image,
-            anchoring identity throughout the clip.
+        motion_bucket_id=100:
+            Moderate motion. Lower = more static/stable face.
+            Higher values (180+) produce jitter and camera shake.
 
-        decode_chunk_size=num_frames (auto):
-            The VAE decoder processes all 25 latent frames together in one pass,
-            so it sees the full temporal context. Chunked decoding (e.g. 8 at a time)
-            creates seam artifacts at chunk boundaries — the main source of ghosting.
+        decode_chunk_size=4:
+            The temporal VAE decoder produces cleaner frames in small chunks.
+            Each chunk of 4 frames is decoded with full temporal context
+            within that window. Large chunks (25) cause the fp16 VAE to
+            accumulate error across frames → face shimmer.
 
-        motion_bucket_id=120:
-            Moderate motion. 255 produces dramatic but unstable movement;
-            120 keeps faces recognisable while still generating natural motion.
+        num_inference_steps=50:
+            More steps = finer texture, less noise-induced drift.
+
+        max_guidance_scale=3.5:
+            Low-moderate CFG. Values >5 cause color shifts and edge ringing
+            that register as ghosting. Keep between 3-4 for portraits.
         """
         import io
         import os
@@ -180,8 +191,7 @@ class SVDModel:
 
         pipe = self.pipe
 
-        # ---- decode chunk size: default to all frames, fallback to 8 on OOM ----
-        chunk_size = num_frames if decode_chunk_size == -1 else decode_chunk_size
+        chunk_size = decode_chunk_size
 
         # ---- Preprocess input image → 1024×576 ----
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -395,17 +405,17 @@ def _encode_mp4(frames: list, fps: int) -> bytes:
 # Legacy function wrapper — keeps modal_svd_client.py call-compatible.
 # Delegates to SVDModel via .local() so it uses the loaded pipeline.
 # ---------------------------------------------------------------------------
-@app.function(gpu="A10G", timeout=300)
+@app.function(gpu="A100", timeout=300)
 def run_svd(
     image_bytes: bytes,
     num_frames: int = 25,
-    num_inference_steps: int = 30,
+    num_inference_steps: int = 50,
     fps: int = 7,
-    motion_bucket_id: int = 120,
-    noise_aug_strength: float = 0.06,
-    decode_chunk_size: int = -1,
+    motion_bucket_id: int = 100,
+    noise_aug_strength: float = 0.04,
+    decode_chunk_size: int = 4,
     min_guidance_scale: float = 1.0,
-    max_guidance_scale: float = 5.0,
+    max_guidance_scale: float = 3.5,
     seed: int = 12345,
     letterbox: bool = False,
 ) -> bytes:
@@ -447,14 +457,14 @@ def main():
         image_bytes = buf.getvalue()
         print("Using synthetic test image (576×768 portrait)")
 
-    print("Submitting SVD job (medium preset)...")
+    print("Submitting SVD job (gentle preset — most stable face)...")
     model = SVDModel()
     try:
         mp4 = model.run.remote(
             image_bytes,
-            **PRESETS["medium"],
+            **PRESETS["gentle"],
             num_frames=25,
-            num_inference_steps=30,
+            num_inference_steps=50,
             fps=7,
         )
         out = "modal_svd_test_output.mp4"

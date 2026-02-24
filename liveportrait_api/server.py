@@ -330,6 +330,68 @@ async def animate(
     )
 
 
+# ---------------------------------------------------------------------------
+# SVD (Stable Video Diffusion) – image-to-video, no driving video needed
+# ---------------------------------------------------------------------------
+@app.post("/animate-svd")
+async def animate_svd(
+    source_image: UploadFile = File(..., description="Portrait or any image (JPEG/PNG, max 10 MB)"),
+    num_frames: int = Form(25, description="Number of frames to generate (default 25)"),
+    num_inference_steps: int = Form(30, description="Diffusion steps — more = better quality (default 30)"),
+    fps: int = Form(7, description="Output video FPS (default 7 → ~3.5s clip)"),
+    motion_bucket_id: int = Form(120, description="Motion amount 1-255 (default 120 = moderate, portrait-safe)"),
+    noise_aug_strength: float = Form(0.06, description="Augmentation level (default 0.06 = low, preserves face identity)"),
+    min_guidance_scale: float = Form(1.0, description="CFG guidance on first frame (default 1.0)"),
+    max_guidance_scale: float = Form(5.0, description="CFG guidance on last frame (default 5.0). Higher = anchors face identity."),
+    seed: int = Form(12345, description="RNG seed for reproducibility (default 12345)"),
+    letterbox: bool = Form(False, description="If true, pad with blurred background instead of cropping"),
+):
+    """
+    Animate any image using Stable Video Diffusion (SVD-XT).
+
+    No driving video needed — SVD generates natural motion from the image itself.
+    Runs on Modal serverless GPU (A10G). Pipeline stays loaded between calls.
+    """
+    contents = await source_image.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail=f"File too large ({len(contents):,} B). Max 10 MB.")
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    _validate_image_bytes(contents[:16])
+
+    t0 = time.time()
+
+    try:
+        from liveportrait_api.modal_svd_client import SVDError, run_job as svd_run_job
+        mp4_bytes = svd_run_job(
+            contents,
+            num_frames=num_frames,
+            num_inference_steps=num_inference_steps,
+            fps=fps,
+            motion_bucket_id=motion_bucket_id,
+            noise_aug_strength=noise_aug_strength,
+            min_guidance_scale=min_guidance_scale,
+            max_guidance_scale=max_guidance_scale,
+            seed=seed,
+            letterbox=letterbox,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SVD error: {e}")
+
+    output_number = _get_next_output_number()
+    filename = f"output_{output_number}.mp4"
+    elapsed_time = f"{time.time()-t0:.2f}s"
+    return StreamingResponse(
+        io.BytesIO(mp4_bytes),
+        media_type="video/mp4",
+        headers={
+            "X-Inference-Mode": "svd",
+            "X-Inference-Time": elapsed_time,
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
 @app.get("/download/{job_id}")
 async def download(job_id: str):
     """Download the animated MP4 for a completed local job."""

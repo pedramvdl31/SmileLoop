@@ -238,7 +238,7 @@ img, video { max-width: 100%; height: auto; display: block; }
   .hero__grid {
     grid-template-columns: 1fr 1fr;
     gap: 48px;
-    align-items: center;
+    align-items: start;
   }
 }
 
@@ -253,6 +253,9 @@ img, video { max-width: 100%; height: auto; display: block; }
 @media (min-width: 900px) {
   .hero__right {
     display: block;
+    position: sticky;
+    top: 80px;
+    align-self: start;
   }
 }
 

@@ -82,6 +82,57 @@
               </div>
             </div>
           </details>
+
+          <!-- Progressive steps (appear after photo selected) -->
+          <div class="upload-step" id="step-animation" style="display: none;">
+            <label class="text-small" style="display: block; font-weight: 500; margin-bottom: 12px; margin-top: 28px; color: var(--color-text-soft);">Choose an animation</label>
+            <div class="animation-cards" id="animation-cards">
+              <div class="animation-card" data-animation="soft_smile">
+                <div class="animation-card__video">
+                  <video autoplay loop muted playsinline>
+                    <source src="/assets/sample-soft-smile.mp4" type="video/mp4">
+                  </video>
+                  <div class="animation-card__video-fallback">😊</div>
+                </div>
+                <div class="animation-card__info">
+                  <div class="animation-card__label">Soft Smile</div>
+                  <div class="animation-card__desc">A gentle, warm smile</div>
+                </div>
+              </div>
+              <div class="animation-card selected" data-animation="smile_wink">
+                <div class="animation-card__video">
+                  <video autoplay loop muted playsinline>
+                    <source src="/assets/sample-smile-wink.mp4" type="video/mp4">
+                  </video>
+                  <div class="animation-card__video-fallback">😉</div>
+                </div>
+                <div class="animation-card__info">
+                  <div class="animation-card__label">Smile + Wink</div>
+                  <div class="animation-card__desc">A playful wink</div>
+                </div>
+              </div>
+              <div class="animation-card" data-animation="gentle_laugh">
+                <div class="animation-card__video">
+                  <video autoplay loop muted playsinline>
+                    <source src="/assets/sample-gentle-laugh.mp4" type="video/mp4">
+                  </video>
+                  <div class="animation-card__video-fallback">😄</div>
+                </div>
+                <div class="animation-card__info">
+                  <div class="animation-card__label">Gentle Laugh</div>
+                  <div class="animation-card__desc">A soft, natural laugh</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="upload-step" id="step-submit" style="display: none;">
+            <div style="margin-top: 24px;">
+              <button class="btn btn--primary btn--full btn--large" id="submit-btn" disabled>Bring It to Life – Free</button>
+            </div>
+            <p class="text-small text-center" style="margin-top: 12px;">Free preview with watermark. No account needed.</p>
+          </div>
+
         </div>
 
         <!-- RIGHT COLUMN: before/after demo (desktop only) -->
@@ -101,58 +152,6 @@
           </div>
         </div>
 
-      </div>
-    </section>
-
-    <!-- Progressive steps (appear after photo selected) — full width below grid -->
-    <section class="container">
-      <div class="upload-step" id="step-animation" style="display: none;">
-        <label class="text-small" style="display: block; font-weight: 500; margin-bottom: 12px; margin-top: 28px; color: var(--color-text-soft);">Choose an animation</label>
-        <div class="animation-cards" id="animation-cards">
-          <div class="animation-card" data-animation="soft_smile">
-            <div class="animation-card__video">
-              <video autoplay loop muted playsinline>
-                <source src="/assets/sample-soft-smile.mp4" type="video/mp4">
-              </video>
-              <div class="animation-card__video-fallback">😊</div>
-            </div>
-            <div class="animation-card__info">
-              <div class="animation-card__label">Soft Smile</div>
-              <div class="animation-card__desc">A gentle, warm smile</div>
-            </div>
-          </div>
-          <div class="animation-card selected" data-animation="smile_wink">
-            <div class="animation-card__video">
-              <video autoplay loop muted playsinline>
-                <source src="/assets/sample-smile-wink.mp4" type="video/mp4">
-              </video>
-              <div class="animation-card__video-fallback">😉</div>
-            </div>
-            <div class="animation-card__info">
-              <div class="animation-card__label">Smile + Wink</div>
-              <div class="animation-card__desc">A playful wink</div>
-            </div>
-          </div>
-          <div class="animation-card" data-animation="gentle_laugh">
-            <div class="animation-card__video">
-              <video autoplay loop muted playsinline>
-                <source src="/assets/sample-gentle-laugh.mp4" type="video/mp4">
-              </video>
-              <div class="animation-card__video-fallback">😄</div>
-            </div>
-            <div class="animation-card__info">
-              <div class="animation-card__label">Gentle Laugh</div>
-              <div class="animation-card__desc">A soft, natural laugh</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="upload-step" id="step-submit" style="display: none;">
-        <div style="margin-top: 24px;">
-          <button class="btn btn--primary btn--full btn--large" id="submit-btn" disabled>Bring It to Life – Free</button>
-        </div>
-        <p class="text-small text-center" style="margin-top: 12px;">Free preview with watermark. No account needed.</p>
       </div>
     </section>
 

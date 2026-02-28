@@ -71,6 +71,10 @@
     if (stepSubmit) stepSubmit.style.display = 'block';
     // Hide the sticky CTA once user has engaged
     hideStickyBar();
+    // Smooth scroll to the animation picker
+    setTimeout(() => {
+      if (stepAnim) stepAnim.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
   }
 
   // ─── Sticky mobile CTA bar ─────────────────────────

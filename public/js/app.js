@@ -71,13 +71,9 @@
     if (stepSubmit) stepSubmit.style.display = 'block';
     // Hide the sticky CTA once user has engaged
     hideStickyBar();
-    // Gently scroll so the animation picker is visible, offset for fixed nav
+    // Gently scroll so the animation picker is visible
     setTimeout(() => {
-      if (stepAnim) {
-        const navHeight = 72;
-        const top = stepAnim.getBoundingClientRect().top + window.scrollY - navHeight;
-        window.scrollTo({ top, behavior: 'smooth' });
-      }
+      if (stepAnim) stepAnim.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 300);
   }
 

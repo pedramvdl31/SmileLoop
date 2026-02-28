@@ -43,7 +43,6 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  scroll-padding-top: 72px; /* account for fixed nav */
 }
 
 body {
@@ -126,7 +125,7 @@ img, video { max-width: 100%; height: auto; display: block; }
 
 /* ----- Navigation ----- */
 .nav {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
@@ -224,7 +223,7 @@ img, video { max-width: 100%; height: auto; display: block; }
 
 /* ----- Hero Section ----- */
 .hero {
-  padding-top: 100px;
+  padding-top: 32px;
   padding-bottom: 40px;
 }
 
@@ -879,7 +878,7 @@ img, video { max-width: 100%; height: auto; display: block; }
   }
 
   .hero {
-    padding-top: 90px;
+    padding-top: 20px;
     padding-bottom: 24px;
   }
 

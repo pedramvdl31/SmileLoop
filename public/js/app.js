@@ -47,9 +47,11 @@
       target.classList.add('active');
       target.classList.add('fade-in');
       state.currentPage = name;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      // Hide sticky CTA bar when not on landing
-      if (name !== 'landing') hideStickyBar();
+      // Scroll to top instantly on page transitions (not on initial landing load)
+      if (name !== 'landing') {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        hideStickyBar();
+      }
     }
   }
 
@@ -69,10 +71,9 @@
     if (stepSubmit) stepSubmit.style.display = 'block';
     // Hide the sticky CTA once user has engaged
     hideStickyBar();
-    // Scroll the submit button into view on mobile
+    // Gently scroll so the animation picker is visible, but don't overshoot
     setTimeout(() => {
-      const btn = $('#submit-btn');
-      if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (stepAnim) stepAnim.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 300);
   }
 

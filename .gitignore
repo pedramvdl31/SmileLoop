@@ -37,6 +37,12 @@ liveportrait_api/presets/*.mp4
 # Secrets / one-off scripts
 set_runpod_env.py
 
+# Runtime data
+smileloop.db
+uploads/
+outputs/
+.env
+
 # Test artifacts
 modal_test_output.mp4
 *.bak

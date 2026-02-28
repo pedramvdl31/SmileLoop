@@ -392,6 +392,120 @@ async def animate_svd(
     )
 
 
+# ---------------------------------------------------------------------------
+# Image-to-Video (AnimateDiff) – image + optional prompt → video
+# ---------------------------------------------------------------------------
+@app.post("/image-to-video")
+async def image_to_video(
+    source_image: UploadFile = File(..., description="Source image (JPEG/PNG, max 10 MB)"),
+    prompt: str = Form("", description="Optional text prompt to guide video generation"),
+    negative_prompt: str = Form(
+        "ghosting, double exposure, blurry, distorted, disfigured, ugly, low resolution, "
+        "bad anatomy, bad hands, watermark, text, worst quality, low quality, jpeg artifacts",
+        description="Negative prompt to avoid undesired artefacts",
+    ),
+    seed: int = Form(8888, description="Random seed for reproducibility (default 8888)"),
+    num_frames: int = Form(16, description="Number of frames to generate (default 16)"),
+    num_inference_steps: int = Form(25, description="Diffusion steps (default 25)"),
+    guidance_scale: float = Form(7.5, description="CFG scale (default 7.5)"),
+    strength: float = Form(0.7, description="Image transformation strength 0-1 (0.7 = preserves content, adds motion)"),
+    fps: int = Form(8, description="Output video FPS (default 8)"),
+):
+    """
+    Generate a video from an image using AnimateDiff.
+
+    Upload any image and optionally provide a text prompt. Uses Stable Diffusion 1.5
+    with AnimateDiff motion modules for temporal consistency.
+    Runs on Modal serverless GPU (A10G).
+    """
+    contents = await source_image.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail=f"File too large ({len(contents):,} B). Max 10 MB.")
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    _validate_image_bytes(contents[:16])
+
+    t0 = time.time()
+
+    try:
+        from liveportrait_api.modal_i2v_client import I2VError, run_job as i2v_run_job
+        mp4_bytes = i2v_run_job(
+            image_bytes=contents,
+            prompt=prompt.strip() if prompt else "",
+            negative_prompt=negative_prompt,
+            seed=seed,
+            num_frames=num_frames,
+            num_inference_steps=num_inference_steps,
+            guidance_scale=guidance_scale,
+            strength=strength,
+            fps=fps,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image-to-Video error: {e}")
+
+    output_number = _get_next_output_number()
+    filename = f"output_{output_number}.mp4"
+    elapsed_time = f"{time.time()-t0:.2f}s"
+    return StreamingResponse(
+        io.BytesIO(mp4_bytes),
+        media_type="video/mp4",
+        headers={
+            "X-Inference-Mode": "i2v-modal",
+            "X-Inference-Time": elapsed_time,
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Text-to-Video (ModelScope) – no image needed, just a text prompt
+# ---------------------------------------------------------------------------
+@app.post("/generate-video")
+async def generate_video(
+    prompt: str = Form(..., description="English text description for the video"),
+    seed: int = Form(-1, description="Random seed (-1 = random, >=0 = reproducible)"),
+    num_frames: int = Form(16, description="Number of frames to generate (default 16)"),
+    num_inference_steps: int = Form(50, description="Diffusion steps — more = better quality (default 50)"),
+    fps: int = Form(8, description="Output video FPS (default 8)"),
+):
+    """
+    Generate a video from an English text description using ModelScope Text-to-Video.
+
+    Runs on Modal serverless GPU (A10G). Model stays loaded between calls.
+    """
+    if not prompt or not prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
+    if len(prompt) > 500:
+        raise HTTPException(status_code=400, detail="Prompt too long (max 500 characters).")
+
+    t0 = time.time()
+
+    try:
+        from liveportrait_api.modal_t2v_client import T2VError, run_job as t2v_run_job
+        mp4_bytes = t2v_run_job(
+            prompt=prompt.strip(),
+            seed=seed,
+            num_frames=num_frames,
+            num_inference_steps=num_inference_steps,
+            fps=fps,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Text-to-Video error: {e}")
+
+    output_number = _get_next_output_number()
+    filename = f"output_{output_number}.mp4"
+    elapsed_time = f"{time.time()-t0:.2f}s"
+    return StreamingResponse(
+        io.BytesIO(mp4_bytes),
+        media_type="video/mp4",
+        headers={
+            "X-Inference-Mode": "t2v-modal",
+            "X-Inference-Time": elapsed_time,
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
 @app.get("/download/{job_id}")
 async def download(job_id: str):
     """Download the animated MP4 for a completed local job."""

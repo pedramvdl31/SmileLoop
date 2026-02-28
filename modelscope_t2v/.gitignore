@@ -1,0 +1,5 @@
+# Ignore model weights and generated outputs
+weights/
+outputs/
+__pycache__/
+*.pyc

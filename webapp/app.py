@@ -190,10 +190,11 @@ async def get_config():
 async def upload_and_generate(
     photo: UploadFile = File(..., description="Portrait photo (JPEG/PNG, max 10 MB)"),
     animation: str = Form(..., description="Animation type: soft_smile | smile_wink | gentle_laugh"),
-    email: str = Form(..., description="User email for delivery"),
+    email: str = Form("", description="User email (optional at upload, captured later)"),
 ):
     """
     Accept a photo upload, validate it, create a job, and start generation.
+    Email is optional — captured on the preview page before payment.
     Returns job_id immediately — client polls /api/status/{job_id}.
     """
     # Validate animation type
@@ -203,8 +204,11 @@ async def upload_and_generate(
             detail=f"Unknown animation '{animation}'. Choose from: {', '.join(ANIMATIONS.keys())}",
         )
 
-    # Validate email
-    email = _validate_email(email)
+    # Validate email only if provided
+    if email:
+        email = _validate_email(email)
+    else:
+        email = ""
 
     # Read and validate image
     contents = await photo.read()
@@ -350,6 +354,28 @@ async def get_status(job_id: str):
         response["download_url"] = f"/api/download/{job_id}"
 
     return response
+
+
+# ---------------------------------------------------------------------------
+# Update email (captured on preview page)
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/update-email/{job_id}")
+async def update_email(job_id: str, request: Request):
+    """Attach an email to an existing job (called from preview page before payment)."""
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    body = await request.json()
+    email = body.get("email", "").strip()
+    if not email:
+        raise HTTPException(status_code=422, detail="Email is required.")
+
+    email = _validate_email(email)
+    update_job(job_id, email=email)
+    return {"ok": True, "email": email}
 
 
 # ---------------------------------------------------------------------------

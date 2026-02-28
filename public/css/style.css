@@ -35,7 +35,7 @@
   --radius-full: 50px;
   --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --max-width: 640px;
+  --max-width: 900px;
 }
 
 html {
@@ -223,24 +223,54 @@ img, video { max-width: 100%; height: auto; display: block; }
 
 /* ----- Hero Section ----- */
 .hero {
-  padding-top: 140px;
-  padding-bottom: 60px;
-  text-align: center;
+  padding-top: 100px;
+  padding-bottom: 40px;
+}
+
+.hero__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .hero__grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+}
+
+.hero__left {
+  text-align: left;
+}
+
+.hero__right {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .hero__right {
+    display: block;
+  }
 }
 
 .hero__headline {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .hero__sub {
-  margin-bottom: 40px;
+  margin-bottom: 12px;
   max-width: 440px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
-.hero__cta {
-  margin-bottom: 56px;
+/* Social proof line */
+.social-proof {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 20px;
+  font-style: italic;
 }
 
 /* Before/After Demo */
@@ -254,6 +284,48 @@ img, video { max-width: 100%; height: auto; display: block; }
   background: var(--color-card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+}
+
+.demo--compact {
+  max-width: 100%;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.demo--compact .demo__item img,
+.demo--compact .demo__item video {
+  max-height: 120px;
+}
+
+/* See-example accordion (mobile only) */
+.see-example {
+  margin-top: 20px;
+}
+
+.see-example summary {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-soft);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.see-example summary::-webkit-details-marker { display: none; }
+
+.see-example summary::before {
+  content: '▸';
+  transition: transform var(--transition);
+}
+
+.see-example[open] summary::before {
+  transform: rotate(90deg);
+}
+
+@media (min-width: 900px) {
+  .see-example { display: none; }
 }
 
 .demo__item {
@@ -291,6 +363,19 @@ img, video { max-width: 100%; height: auto; display: block; }
   font-size: 1.4rem;
   color: var(--color-text-muted);
   flex-shrink: 0;
+}
+
+/* Right-column demo on desktop */
+@media (min-width: 900px) {
+  .hero__right .demo {
+    max-width: 100%;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+  }
+  .hero__right .demo__arrow {
+    transform: rotate(90deg);
+  }
 }
 
 /* ----- How It Works ----- */
@@ -348,29 +433,40 @@ img, video { max-width: 100%; height: auto; display: block; }
 
 /* ----- Upload Section ----- */
 .upload-area {
-  margin-top: 32px;
+  margin-top: 8px;
+}
+
+.upload-step {
+  animation: revealStep 0.4s ease forwards;
+}
+
+@keyframes revealStep {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .dropzone {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 48px 24px;
+  padding: 44px 28px;
   text-align: center;
   cursor: pointer;
   transition: all var(--transition);
   background: var(--color-card-bg);
+  box-shadow: var(--shadow-card);
 }
 
 .dropzone:hover,
 .dropzone.dragover {
   border-color: var(--color-text-soft);
   background: var(--color-bg-alt);
+  box-shadow: var(--shadow-lg);
 }
 
 .dropzone__icon {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   margin-bottom: 12px;
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 .dropzone__text {
@@ -410,6 +506,27 @@ img, video { max-width: 100%; height: auto; display: block; }
   color: var(--color-text);
 }
 
+/* Trust row under dropzone */
+.trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 20px;
+  margin-top: 14px;
+}
+
+.trust-row span {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .trust-row {
+    justify-content: flex-start;
+  }
+}
+
 /* Animation Cards */
 .animation-cards {
   display: grid;
@@ -422,10 +539,14 @@ img, video { max-width: 100%; height: auto; display: block; }
   background: var(--color-card-bg);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 20px 12px;
+  padding: 14px;
   text-align: center;
   cursor: pointer;
   transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 .animation-card:hover {
@@ -439,9 +560,41 @@ img, video { max-width: 100%; height: auto; display: block; }
   box-shadow: var(--shadow-md);
 }
 
-.animation-card__icon {
-  font-size: 1.8rem;
-  margin-bottom: 8px;
+/* Sample video thumbnail */
+.animation-card__video {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg-alt);
+  position: relative;
+}
+
+.animation-card__video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.animation-card__video-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Hide fallback emoji when video loads */
+.animation-card__video video:not([src=""]) ~ .animation-card__video-fallback {
+  /* Fallback always shown; video covers it when playing */
+}
+
+.animation-card__info {
+  width: 100%;
 }
 
 .animation-card__label {
@@ -559,16 +712,37 @@ img, video { max-width: 100%; height: auto; display: block; }
   display: block;
 }
 
+.preview__email-capture {
+  margin-top: 8px;
+}
+
+/* Value stack */
+.value-stack {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.value-stack span {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-soft);
+}
+
 .preview__price {
   font-size: 0.9rem;
   color: var(--color-text-muted);
   margin-top: 12px;
 }
 
-.preview__guarantee {
+.preview__scarcity {
   font-size: 0.8rem;
-  color: var(--color-text-muted);
-  margin-top: 16px;
+  color: var(--color-text-soft);
+  font-weight: 500;
+  margin-top: 8px;
+  opacity: 0.8;
 }
 
 /* ----- Success Section ----- */
@@ -643,43 +817,76 @@ img, video { max-width: 100%; height: auto; display: block; }
   transform: translateX(-50%) translateY(0);
 }
 
+/* ----- Sticky mobile CTA bar ----- */
+.sticky-cta {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: rgba(253, 251, 247, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+
+.sticky-cta .btn {
+  padding: 14px 24px;
+  font-size: 1rem;
+}
+
+/* Show sticky bar only on mobile, only on landing page, and only when dropzone is not visible */
+@media (max-width: 899px) {
+  .sticky-cta.visible {
+    display: block;
+  }
+}
+
 /* ----- Responsive ----- */
-@media (max-width: 480px) {
+@media (max-width: 899px) {
   .container {
     padding: 0 16px;
   }
 
   .hero {
-    padding-top: 110px;
-    padding-bottom: 40px;
+    padding-top: 90px;
+    padding-bottom: 24px;
   }
 
-  .demo {
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+  .hero__left {
+    text-align: center;
   }
 
-  .demo__arrow {
-    transform: rotate(90deg);
+  .hero__sub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .demo--compact .demo__item img,
+  .demo--compact .demo__item video {
+    max-height: 100px;
   }
 
   .animation-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
   }
 
   .animation-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    text-align: left;
-    padding: 16px 18px;
+    padding: 10px;
+    gap: 8px;
   }
 
-  .animation-card__icon {
-    margin-bottom: 0;
-    font-size: 1.5rem;
+  .animation-card__video {
+    aspect-ratio: 1;
+  }
+
+  .animation-card__video-fallback {
+    font-size: 1.6rem;
   }
 
   .btn--large {
@@ -689,6 +896,11 @@ img, video { max-width: 100%; height: auto; display: block; }
 
   .section {
     padding: 56px 0;
+  }
+
+  /* Add bottom padding so sticky bar doesn't cover content */
+  body {
+    padding-bottom: 72px;
   }
 }
 

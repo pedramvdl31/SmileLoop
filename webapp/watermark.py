@@ -22,14 +22,14 @@ def add_watermark(input_path: Path, output_path: Path, text: str = "SmileLoop Pr
         shutil.copy2(input_path, output_path)
         return True
 
-    # Subtle white text with slight shadow, centered, semi-transparent
+    # Subtle white text, bottom center, semi-transparent — readable but not covering face
     drawtext = (
         f"drawtext=text='{text}':"
-        f"fontsize=28:"
-        f"fontcolor=white@0.35:"
+        f"fontsize=22:"
+        f"fontcolor=white@0.30:"
         f"x=(w-text_w)/2:"
-        f"y=(h-text_h)/2:"
-        f"shadowcolor=black@0.2:"
+        f"y=h-text_h-20:"
+        f"shadowcolor=black@0.15:"
         f"shadowx=1:shadowy=1"
     )
 

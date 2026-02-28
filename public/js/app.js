@@ -1,6 +1,6 @@
 /* =====================================================
    SmileLoop – Frontend Application
-   Single-page app: Landing → Upload → Processing → Preview → Payment → Success
+   Single-page: Landing (hero + upload inline) → Processing → Preview → Success
    ===================================================== */
 
 (function () {
@@ -16,8 +16,8 @@
     pollTimer: null,
     config: {
       stripe_publishable_key: '',
-      price_cents: 799,
-      price_display: '$7.99',
+      price_cents: 499,
+      price_display: '$4.99',
     },
   };
 
@@ -27,7 +27,6 @@
 
   const pages = {
     landing: $('#page-landing'),
-    upload: $('#page-upload'),
     processing: $('#page-processing'),
     preview: $('#page-preview'),
     success: $('#page-success'),
@@ -43,6 +42,8 @@
       target.classList.add('fade-in');
       state.currentPage = name;
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Hide sticky CTA bar when not on landing
+      if (name !== 'landing') hideStickyBar();
     }
   }
 
@@ -52,6 +53,70 @@
     toast.textContent = message;
     toast.classList.add('visible');
     setTimeout(() => toast.classList.remove('visible'), duration);
+  }
+
+  // ─── Progressive Reveal ─────────────────────────────
+  function revealUploadSteps() {
+    const stepAnim = $('#step-animation');
+    const stepSubmit = $('#step-submit');
+    if (stepAnim) stepAnim.style.display = 'block';
+    if (stepSubmit) stepSubmit.style.display = 'block';
+    // Hide the sticky CTA once user has engaged
+    hideStickyBar();
+    // Scroll the submit button into view on mobile
+    setTimeout(() => {
+      const btn = $('#submit-btn');
+      if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
+
+  // ─── Sticky mobile CTA bar ─────────────────────────
+  let stickyObserver = null;
+
+  function initStickyBar() {
+    const stickyCta = $('#sticky-cta');
+    const stickyBtn = $('#sticky-cta-btn');
+    const dropzone = $('#dropzone');
+    if (!stickyCta || !stickyBtn || !dropzone) return;
+
+    // Click: scroll to dropzone and trigger file picker
+    stickyBtn.addEventListener('click', () => {
+      dropzone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => $('#file-input').click(), 400);
+    });
+
+    // IntersectionObserver: show sticky bar when dropzone scrolls out of view
+    stickyObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (state.currentPage !== 'landing') return;
+        if (state.selectedFile) {
+          stickyCta.classList.remove('visible');
+          return;
+        }
+        if (entry.isIntersecting) {
+          stickyCta.classList.remove('visible');
+        } else {
+          stickyCta.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    stickyObserver.observe(dropzone);
+  }
+
+  function hideStickyBar() {
+    const stickyCta = $('#sticky-cta');
+    if (stickyCta) stickyCta.classList.remove('visible');
+  }
+
+  // ─── Sample video fallbacks ─────────────────────────
+  function initSampleVideos() {
+    $$('.animation-card__video video').forEach((video) => {
+      const fallback = video.parentElement.querySelector('.animation-card__video-fallback');
+      if (!fallback) return;
+      video.addEventListener('playing', () => { fallback.style.display = 'none'; });
+      video.addEventListener('error', () => { fallback.style.display = 'flex'; });
+    });
   }
 
   // ─── Init ───────────────────────────────────────────
@@ -66,33 +131,26 @@
       console.warn('Could not load config:', e);
     }
 
-    // Update price displays
     updatePriceDisplays();
-
-    // Check URL for returning from Stripe
     handleStripeReturn();
-
-    // Bind events
     bindEvents();
+    initStickyBar();
+    initSampleVideos();
   }
 
   function updatePriceDisplays() {
-    const price = state.config.price_display || '$7.99';
+    const price = state.config.price_display || '$4.99';
     const unlockBtn = $('#unlock-btn');
     if (unlockBtn) {
-      unlockBtn.textContent = `Unlock Full Video – ${price}`;
+      unlockBtn.textContent = `Unlock Full Video \u2013 ${price}`;
+      // Disable until email entered
+      unlockBtn.disabled = !isValidEmail(state.email);
     }
   }
 
   // ─── Event Binding ──────────────────────────────────
   function bindEvents() {
-    // CTA buttons → go to upload
-    ['#hero-cta', '#bottom-cta', '#nav-cta'].forEach((sel) => {
-      const el = $(sel);
-      if (el) el.addEventListener('click', (e) => { e.preventDefault(); showPage('upload'); });
-    });
-
-    // Dropzone
+    // Dropzone — the main CTA
     const dropzone = $('#dropzone');
     const fileInput = $('#file-input');
 
@@ -141,11 +199,15 @@
       });
     });
 
-    // Email input
+    // Email input (on preview page)
     const emailInput = $('#email-input');
     emailInput.addEventListener('input', () => {
       state.email = emailInput.value.trim();
-      validateForm();
+      // Enable unlock button when email is valid
+      const unlockBtn = $('#unlock-btn');
+      if (unlockBtn) {
+        unlockBtn.disabled = !isValidEmail(state.email);
+      }
     });
 
     emailInput.addEventListener('blur', () => {
@@ -169,13 +231,13 @@
     // Create another
     $('#create-another-btn').addEventListener('click', () => {
       resetState();
-      showPage('upload');
+      showPage('landing');
     });
 
     // Retry
     $('#retry-btn').addEventListener('click', () => {
       resetState();
-      showPage('upload');
+      showPage('landing');
     });
   }
 
@@ -206,7 +268,11 @@
       const dropzone = $('#dropzone');
       dropzone.querySelector('.dropzone__icon').style.display = 'none';
       dropzone.querySelector('.dropzone__text').style.display = 'none';
-      dropzone.querySelector('.text-small')?.style && (dropzone.querySelectorAll('.text-small')[0].style.display = 'none');
+      const hint = dropzone.querySelector('.text-small');
+      if (hint) hint.style.display = 'none';
+
+      // Reveal animation picker + email fields
+      revealUploadSteps();
     };
     reader.readAsDataURL(file);
 
@@ -219,7 +285,7 @@
   }
 
   function validateForm() {
-    const valid = state.selectedFile && state.selectedAnimation && isValidEmail(state.email);
+    const valid = state.selectedFile && state.selectedAnimation;
     $('#submit-btn').disabled = !valid;
     return valid;
   }
@@ -235,7 +301,6 @@
     const formData = new FormData();
     formData.append('photo', state.selectedFile);
     formData.append('animation', state.selectedAnimation);
-    formData.append('email', state.email);
 
     try {
       const resp = await fetch('/api/upload', {
@@ -259,7 +324,7 @@
     } catch (e) {
       showToast(e.message || 'Something went wrong. Please try again.');
       btn.disabled = false;
-      btn.textContent = 'Create My Preview';
+      btn.textContent = 'Create My Preview \u2013 Free';
     }
   }
 
@@ -301,9 +366,29 @@
 
   // ─── Payment ────────────────────────────────────────
   async function handlePayment() {
+    // Validate email first
+    if (!isValidEmail(state.email)) {
+      const emailInput = $('#email-input');
+      emailInput.focus();
+      $('#email-error').classList.add('visible');
+      showToast('Please enter your email to continue.');
+      return;
+    }
+
     const btn = $('#unlock-btn');
     btn.disabled = true;
-    btn.textContent = 'Redirecting…';
+    btn.textContent = 'Redirecting\u2026';
+
+    // Save email to job server-side
+    try {
+      await fetch(`/api/update-email/${state.jobId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: state.email }),
+      });
+    } catch (e) {
+      console.warn('Email update failed:', e);
+    }
 
     try {
       const resp = await fetch('/api/create-checkout', {
@@ -408,15 +493,26 @@
     const dropzone = $('#dropzone');
     dropzone.querySelector('.dropzone__icon').style.display = '';
     dropzone.querySelector('.dropzone__text').style.display = '';
-    const smallTexts = dropzone.querySelectorAll('.text-small');
-    if (smallTexts[0]) smallTexts[0].style.display = '';
+    const hint = dropzone.querySelector('.text-small');
+    if (hint) hint.style.display = '';
     $('#dropzone-preview').classList.remove('visible');
     $('#file-input').value = '';
+
+    // Hide progressive steps
+    const stepAnim = $('#step-animation');
+    const stepSubmit = $('#step-submit');
+    if (stepAnim) stepAnim.style.display = 'none';
+    if (stepSubmit) stepSubmit.style.display = 'none';
 
     // Reset button
     const btn = $('#submit-btn');
     btn.disabled = true;
-    btn.textContent = 'Create My Preview';
+    btn.textContent = 'Create My Preview \u2013 Free';
+
+    // Reset email on preview page
+    const emailInput = $('#email-input');
+    if (emailInput) emailInput.value = '';
+    state.email = '';
 
     // Reset unlock button
     updatePriceDisplays();

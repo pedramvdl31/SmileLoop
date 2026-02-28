@@ -25,154 +25,154 @@
   <nav class="nav">
     <div class="nav__inner">
       <a href="/" class="nav__logo">Smile<span>Loop</span></a>
-      <a href="#" class="btn btn--secondary" id="nav-cta" style="padding: 10px 22px; font-size: 0.85rem;">Try It Now</a>
     </div>
   </nav>
 
   <!-- ═══════════════════════════════════════════
-       SECTION 1: Landing / Hero
+       SECTION 1: Landing — Hero + Upload combined
+       One screen. Promise → Proof → Action.
        ═══════════════════════════════════════════ -->
   <div id="page-landing" class="page-section active">
 
-    <!-- Hero -->
-    <section class="hero container">
-      <h1 class="text-hero hero__headline">Turn Your Photo Into<br>a Living Memory.</h1>
-      <p class="text-subhero hero__sub">Upload a photo. Watch it smile.</p>
-      <div class="hero__cta">
-        <button class="btn btn--primary btn--large" id="hero-cta">Try It Now</button>
-      </div>
+    <section class="hero">
+      <div class="hero__grid container">
 
-      <!-- Before / After Demo -->
-      <div class="demo" id="hero-demo">
-        <div class="demo__item">
-          <img src="/assets/demo-before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
-          <span class="demo__label">Before</span>
+        <!-- LEFT COLUMN: headline + upload (always above-fold) -->
+        <div class="hero__left">
+          <h1 class="text-hero hero__headline">Bring Your Photo to Life.</h1>
+          <p class="text-subhero hero__sub">Upload a photo. Watch it smile.</p>
+          <p class="social-proof">People are turning their favorite photos into smiles.</p>
+
+          <!-- Upload — immediately visible, IS the CTA -->
+          <div class="upload-area">
+            <div class="dropzone" id="dropzone">
+              <div class="dropzone__icon">📷</div>
+              <p class="dropzone__text"><strong>Choose a photo you love.</strong></p>
+              <p class="text-small" style="margin-top: 6px;">JPG or PNG, up to 10 MB</p>
+              <input type="file" id="file-input" accept="image/jpeg,image/png" hidden>
+              <div class="dropzone__preview" id="dropzone-preview">
+                <img id="preview-image" alt="Your photo">
+                <span class="dropzone__change" id="change-photo">Change photo</span>
+              </div>
+            </div>
+            <div class="trust-row">
+              <span>🔒 Private &amp; deleted after processing</span>
+              <span>⚡ Ready in ~30 seconds</span>
+              <span>No subscription</span>
+            </div>
+          </div>
+
+          <!-- "See example" accordion — mobile only -->
+          <details class="see-example" id="see-example-mobile">
+            <summary>See an example</summary>
+            <div class="demo demo--compact">
+              <div class="demo__item">
+                <img src="/assets/demo-before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
+                <span class="demo__label">Before</span>
+              </div>
+              <span class="demo__arrow">→</span>
+              <div class="demo__item">
+                <video autoplay loop muted playsinline>
+                  <source src="/assets/demo-after.mp4" type="video/mp4">
+                </video>
+                <span class="demo__label">After</span>
+              </div>
+            </div>
+          </details>
         </div>
-        <span class="demo__arrow">→</span>
-        <div class="demo__item">
-          <video autoplay loop muted playsinline>
-            <source src="/assets/demo-after.mp4" type="video/mp4">
-          </video>
-          <span class="demo__label">After</span>
+
+        <!-- RIGHT COLUMN: before/after demo (desktop only) -->
+        <div class="hero__right">
+          <div class="demo" id="hero-demo">
+            <div class="demo__item">
+              <img src="/assets/demo-before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
+              <span class="demo__label">Before</span>
+            </div>
+            <span class="demo__arrow">→</span>
+            <div class="demo__item">
+              <video autoplay loop muted playsinline>
+                <source src="/assets/demo-after.mp4" type="video/mp4">
+              </video>
+              <span class="demo__label">After</span>
+            </div>
+          </div>
         </div>
+
       </div>
     </section>
 
-    <!-- How It Works -->
-    <section class="section container">
-      <h2 class="text-section-title text-center">How It Works</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step__number">1</div>
-          <div class="step__content">
-            <h3>Upload your photo</h3>
-            <p>Any portrait — a selfie, a family photo, an old memory.</p>
+    <!-- Progressive steps (appear after photo selected) — full width below grid -->
+    <section class="container">
+      <div class="upload-step" id="step-animation" style="display: none;">
+        <label class="text-small" style="display: block; font-weight: 500; margin-bottom: 12px; margin-top: 28px; color: var(--color-text-soft);">Choose an animation</label>
+        <div class="animation-cards" id="animation-cards">
+          <div class="animation-card" data-animation="soft_smile">
+            <div class="animation-card__video">
+              <video autoplay loop muted playsinline>
+                <source src="/assets/sample-soft-smile.mp4" type="video/mp4">
+              </video>
+              <div class="animation-card__video-fallback">😊</div>
+            </div>
+            <div class="animation-card__info">
+              <div class="animation-card__label">Soft Smile</div>
+              <div class="animation-card__desc">A gentle, warm smile</div>
+            </div>
           </div>
-        </div>
-        <div class="step">
-          <div class="step__number">2</div>
-          <div class="step__content">
-            <h3>Choose an animation</h3>
-            <p>A soft smile, a wink, or a gentle laugh.</p>
+          <div class="animation-card selected" data-animation="smile_wink">
+            <div class="animation-card__video">
+              <video autoplay loop muted playsinline>
+                <source src="/assets/sample-smile-wink.mp4" type="video/mp4">
+              </video>
+              <div class="animation-card__video-fallback">😉</div>
+            </div>
+            <div class="animation-card__info">
+              <div class="animation-card__label">Smile + Wink</div>
+              <div class="animation-card__desc">A playful wink</div>
+            </div>
           </div>
-        </div>
-        <div class="step">
-          <div class="step__number">3</div>
-          <div class="step__content">
-            <h3>Download your living memory</h3>
-            <p>Get a beautiful video that feels real and warm.</p>
+          <div class="animation-card" data-animation="gentle_laugh">
+            <div class="animation-card__video">
+              <video autoplay loop muted playsinline>
+                <source src="/assets/sample-gentle-laugh.mp4" type="video/mp4">
+              </video>
+              <div class="animation-card__video-fallback">😄</div>
+            </div>
+            <div class="animation-card__info">
+              <div class="animation-card__label">Gentle Laugh</div>
+              <div class="animation-card__desc">A soft, natural laugh</div>
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="upload-step" id="step-submit" style="display: none;">
+        <div style="margin-top: 24px;">
+          <button class="btn btn--primary btn--full btn--large" id="submit-btn" disabled>Create My Preview – Free</button>
+        </div>
+        <p class="text-small text-center" style="margin-top: 12px;">Free preview with watermark. No account needed.</p>
+      </div>
     </section>
 
-    <!-- Emotional Section -->
+    <!-- Below the fold — soft social proof -->
     <section class="section container">
       <div class="emotional">
         <p>
           Sometimes all it takes is a blink.<br>
           A smile.<br>
           A small movement.<br><br>
-          And a memory feels alive again.
+          And it feels warm again.
         </p>
       </div>
     </section>
 
-    <!-- Bottom CTA -->
-    <section class="section--flush container text-center" style="padding-bottom: 80px;">
-      <button class="btn btn--primary btn--large" id="bottom-cta">Bring Your Photo to Life</button>
-    </section>
-
-    <!-- Footer -->
     <footer class="footer">
       <p>&copy; 2026 SmileLoop. All rights reserved.</p>
     </footer>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       SECTION 2: Upload
-       ═══════════════════════════════════════════ -->
-  <div id="page-upload" class="page-section">
-    <section class="section container" style="padding-top: 120px;">
-      <h2 class="text-section-title text-center">Bring Your Photo to Life</h2>
-      <p class="text-body text-center" style="margin-top: 8px; margin-bottom: 8px;">Upload a portrait and choose how you'd like it to move.</p>
-
-      <div class="upload-area">
-        <!-- Drop Zone -->
-        <div class="dropzone" id="dropzone">
-          <div class="dropzone__icon">📷</div>
-          <p class="dropzone__text"><strong>Tap to upload</strong> or drag your photo here</p>
-          <p class="text-small" style="margin-top: 8px;">JPG or PNG, up to 10 MB</p>
-          <input type="file" id="file-input" accept="image/jpeg,image/png" hidden>
-          <div class="dropzone__preview" id="dropzone-preview">
-            <img id="preview-image" alt="Your photo">
-            <span class="dropzone__change" id="change-photo">Change photo</span>
-          </div>
-        </div>
-
-        <!-- Animation Selection -->
-        <div style="margin-top: 32px;">
-          <label class="text-small" style="display: block; font-weight: 500; margin-bottom: 12px; color: var(--color-text-soft);">Choose an animation</label>
-          <div class="animation-cards" id="animation-cards">
-            <div class="animation-card" data-animation="soft_smile">
-              <div class="animation-card__icon">😊</div>
-              <div>
-                <div class="animation-card__label">Soft Smile</div>
-                <div class="animation-card__desc">A gentle, warm smile</div>
-              </div>
-            </div>
-            <div class="animation-card selected" data-animation="smile_wink">
-              <div class="animation-card__icon">😉</div>
-              <div>
-                <div class="animation-card__label">Smile + Wink</div>
-                <div class="animation-card__desc">A playful wink</div>
-              </div>
-            </div>
-            <div class="animation-card" data-animation="gentle_laugh">
-              <div class="animation-card__icon">😄</div>
-              <div>
-                <div class="animation-card__label">Gentle Laugh</div>
-                <div class="animation-card__desc">A soft, natural laugh</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Email -->
-        <div class="input-group">
-          <label for="email-input">Your email</label>
-          <input type="email" id="email-input" class="input-field" placeholder="you@example.com" autocomplete="email">
-          <p class="form-error" id="email-error">Please enter a valid email address.</p>
-        </div>
-
-        <!-- Submit -->
-        <div style="margin-top: 32px;">
-          <button class="btn btn--primary btn--full btn--large" id="submit-btn" disabled>Create My Preview</button>
-        </div>
-
-        <p class="text-small text-center" style="margin-top: 16px;">We'll send the download link to your email too.</p>
-      </div>
-    </section>
+  <!-- Sticky mobile CTA bar -->
+  <div class="sticky-cta" id="sticky-cta">
+    <button class="btn btn--primary btn--full" id="sticky-cta-btn">Upload Photo</button>
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -198,15 +198,31 @@
           </video>
         </div>
 
-        <h2 class="text-section-title" style="margin-top: 32px;">Love it?</h2>
-        <p class="text-body" style="margin-top: 8px;">Download the full version without watermark.</p>
+        <h2 class="text-section-title" style="margin-top: 32px;">Feels real, doesn't it?</h2>
+        <p class="text-body" style="margin-top: 8px;">Download the full version — no watermark.</p>
 
-        <div style="margin-top: 28px;">
-          <button class="btn btn--primary btn--large" id="unlock-btn">Unlock Full Video – $7.99</button>
+        <!-- Email capture (moved here from upload flow) -->
+        <div class="preview__email-capture" id="preview-email-capture">
+          <div class="input-group" style="margin-top: 20px; max-width: 360px; margin-left: auto; margin-right: auto;">
+            <input type="email" id="email-input" class="input-field" placeholder="Enter your email" autocomplete="email">
+            <p class="form-error" id="email-error">Please enter a valid email address.</p>
+          </div>
+          <p class="text-small text-center" style="margin-top: 8px;">We'll also send the download link to your email.</p>
+        </div>
+
+        <!-- Value stack -->
+        <div class="value-stack">
+          <span>✓ Full HD quality</span>
+          <span>✓ No watermark</span>
+          <span>✓ Yours to keep forever</span>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <button class="btn btn--primary btn--large" id="unlock-btn">Unlock Full Video – $4.99</button>
         </div>
 
         <p class="preview__price">One-time purchase. No subscription.</p>
-        <p class="preview__guarantee">✓ Instant download &nbsp; ✓ Full HD quality &nbsp; ✓ No watermark</p>
+        <p class="preview__scarcity">Limited launch price.</p>
       </div>
     </section>
   </div>
@@ -217,7 +233,7 @@
   <div id="page-success" class="page-section">
     <section class="success container">
       <div class="success__icon">✨</div>
-      <h2 class="text-section-title">Your memory is alive.</h2>
+      <h2 class="text-section-title">It's ready.</h2>
       <p class="text-body success__message">Your full video is ready. We've also sent a download link to your email.</p>
       <div style="display: flex; flex-direction: column; gap: 12px; align-items: center;">
         <button class="btn btn--primary btn--large" id="download-btn">Download Video</button>

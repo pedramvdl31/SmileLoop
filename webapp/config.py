@@ -26,7 +26,7 @@ OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-STRIPE_PRICE_CENTS = int(os.environ.get("STRIPE_PRICE_CENTS", "799"))  # $7.99
+STRIPE_PRICE_CENTS = int(os.environ.get("STRIPE_PRICE_CENTS", "499"))  # $4.99 launch price
 
 # ---------------------------------------------------------------------------
 # App

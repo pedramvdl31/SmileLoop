@@ -265,12 +265,30 @@ img, video { max-width: 100%; height: auto; display: block; }
   max-width: 440px;
 }
 
-/* Social proof line */
+/* Social proof block */
 .social-proof {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
   margin-bottom: 20px;
+}
+
+.star-rating {
+  font-size: 0.95rem;
+  color: #F5A623;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.star-rating__count {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+.testimonial {
+  font-size: 0.85rem;
+  color: var(--color-text-soft);
   font-style: italic;
+  line-height: 1.5;
 }
 
 /* Before/After Demo */
@@ -735,6 +753,13 @@ img, video { max-width: 100%; height: auto; display: block; }
   font-size: 0.9rem;
   color: var(--color-text-muted);
   margin-top: 12px;
+}
+
+.price-original {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+  margin-right: 4px;
 }
 
 .preview__scarcity {

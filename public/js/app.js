@@ -25,6 +25,12 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
+  // ─── Event Tracking ──────────────────────────────────
+  function trackEvent(name, data = {}) {
+    console.log('[SmileLoop]', name, data);
+    // Future: POST to /api/track
+  }
+
   const pages = {
     landing: $('#page-landing'),
     processing: $('#page-processing'),
@@ -142,7 +148,7 @@
     const price = state.config.price_display || '$4.99';
     const unlockBtn = $('#unlock-btn');
     if (unlockBtn) {
-      unlockBtn.textContent = `Unlock Full Video \u2013 ${price}`;
+      unlockBtn.textContent = `Get My Video \u2013 ${price}`;
       // Disable until email entered
       unlockBtn.disabled = !isValidEmail(state.email);
     }
@@ -184,6 +190,8 @@
       if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
     });
 
+    dropzone.addEventListener('click', () => trackEvent('dropzone_click'));
+
     $('#change-photo').addEventListener('click', (e) => {
       e.stopPropagation();
       fileInput.click();
@@ -195,6 +203,7 @@
         $$('.animation-card').forEach((c) => c.classList.remove('selected'));
         card.classList.add('selected');
         state.selectedAnimation = card.dataset.animation;
+        trackEvent('animation_select', { animation: card.dataset.animation });
         validateForm();
       });
     });
@@ -220,13 +229,22 @@
     });
 
     // Submit
-    $('#submit-btn').addEventListener('click', handleSubmit);
+    $('#submit-btn').addEventListener('click', () => {
+      trackEvent('submit_click');
+      handleSubmit();
+    });
 
     // Unlock (payment)
-    $('#unlock-btn').addEventListener('click', handlePayment);
+    $('#unlock-btn').addEventListener('click', () => {
+      trackEvent('unlock_click');
+      handlePayment();
+    });
 
     // Download
-    $('#download-btn').addEventListener('click', handleDownload);
+    $('#download-btn').addEventListener('click', () => {
+      trackEvent('download_click');
+      handleDownload();
+    });
 
     // Create another
     $('#create-another-btn').addEventListener('click', () => {
@@ -256,6 +274,7 @@
     }
 
     state.selectedFile = file;
+    trackEvent('photo_selected', { type: file.type, sizeKB: Math.round(file.size / 1024) });
 
     // Show preview
     const reader = new FileReader();
@@ -324,7 +343,7 @@
     } catch (e) {
       showToast(e.message || 'Something went wrong. Please try again.');
       btn.disabled = false;
-      btn.textContent = 'Create My Preview \u2013 Free';
+      btn.textContent = 'Bring It to Life \u2013 Free';
     }
   }
 
@@ -507,7 +526,7 @@
     // Reset button
     const btn = $('#submit-btn');
     btn.disabled = true;
-    btn.textContent = 'Create My Preview \u2013 Free';
+    btn.textContent = 'Bring It to Life \u2013 Free';
 
     // Reset email on preview page
     const emailInput = $('#email-input');

@@ -8,30 +8,61 @@
 
 ---
 
-## Quick Start
+## Quick Start — How to Run the System
+
+### Prerequisites
+
+- **Python 3.10+** (check with `python3 --version`)
+- **ffmpeg** (for watermarking previews — `brew install ffmpeg` on macOS)
+- A `.env` file (see step 3 below)
+
+### Step-by-step
 
 ```bash
-# 1. Clone & enter
+# 1. Enter the project directory
 cd SmileLoop
 
-# 2. Create virtualenv
-python -m venv .venv && source .venv/bin/activate
+# 2. Activate the virtual environment (already created in .venv/)
+source .venv/bin/activate
 
-# 3. Install dependencies
+# 3. Set up environment variables
+#    Copy the example and fill in your values:
+cp .env.example .env
+#    Then edit .env — here's what goes in it:
+#
+#      STRIPE_SECRET_KEY=sk_test_...        # Stripe secret key (required for payments)
+#      STRIPE_PUBLISHABLE_KEY=pk_test_...   # Stripe publishable key (required for payments)
+#      STRIPE_WEBHOOK_SECRET=whsec_...      # Stripe webhook signing secret
+#      STRIPE_PRICE_CENTS=499               # Price in cents (default $4.99)
+#      APP_URL=http://localhost:8000         # Base URL for Stripe redirect URLs
+#      INFERENCE_MODE=modal                  # modal | cloud | local
+#
+#    Without Stripe keys the app still runs — upload, generation, and preview
+#    all work. Payment buttons will show an error until you configure Stripe.
+
+# 4. Install dependencies (only needed once, or after pulling new code)
 pip install -r requirements_webapp.txt
 
-# 4. Configure environment (Stripe keys, inference mode)
-cp .env.example .env
-# Edit .env with your Stripe keys
-
-# 5. Run
+# 5. Start the server (option A — recommended, uses the launcher script)
 ./run_webapp.sh
-# → http://localhost:8000
+# → opens at http://localhost:8000
+
+# 5b. Or start manually with uvicorn:
+uvicorn webapp.app:app --host 0.0.0.0 --port 8000 --reload --reload-dir webapp --reload-dir public
 ```
 
-**Without Stripe**: The app runs fine — upload, generation, and preview all work. Payment buttons will show an error until you configure Stripe keys.
+### Quick one-liner (if venv + deps are already set up)
 
-**Inference**: By default uses `INFERENCE_MODE=modal` (Modal serverless GPU). Set to `local` and run `liveportrait_api/server.py` on port 8001 if you have a local GPU.
+```bash
+source .venv/bin/activate && ./run_webapp.sh
+```
+
+### Notes
+
+- **Without Stripe**: The app runs fine — upload, generation, and preview all work. Payment buttons will show an error until you add Stripe keys to `.env`.
+- **Inference**: Default is `INFERENCE_MODE=modal` (Modal serverless GPU). Set to `local` and run `liveportrait_api/server.py` on port 8001 if you have a local GPU.
+- **Hot reload**: The server watches `webapp/` and `public/` — save a file and the server restarts automatically.
+- **Database**: SQLite at `smileloop.db` in the project root. Created automatically on first run.
 
 ---
 

@@ -1,13 +1,16 @@
 # coding: utf-8
 """
 SmileLoop – SQLite Database Layer
+
+Tables:
+  - jobs: video generation jobs
+  - rate_limits: per-key request counters for rate limiting
 """
 
 import sqlite3
 import time
 import uuid
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Optional
 
 from webapp.config import DB_PATH
@@ -40,40 +43,74 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 id TEXT PRIMARY KEY,
+                created_at REAL NOT NULL,
                 email TEXT NOT NULL,
-                animation_type TEXT NOT NULL,
-                original_image_path TEXT,
+                ip_address TEXT DEFAULT '',
+                user_agent TEXT DEFAULT '',
+                input_image_path TEXT,
                 preview_video_path TEXT,
                 full_video_path TEXT,
-                status TEXT NOT NULL DEFAULT 'uploaded',
-                stripe_session_id TEXT,
-                stripe_payment_intent TEXT,
-                created_at REAL NOT NULL,
+                status TEXT NOT NULL DEFAULT 'queued',
+                stripe_checkout_session_id TEXT,
+                stripe_payment_status TEXT DEFAULT '',
+                error_message TEXT DEFAULT '',
                 updated_at REAL NOT NULL,
                 paid_at REAL,
                 download_count INTEGER DEFAULT 0
             )
         """)
+
         conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_jobs_email ON jobs(email)
-        """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status)
-        """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_jobs_stripe_session ON jobs(stripe_session_id)
+            CREATE TABLE IF NOT EXISTS rate_limits (
+                key TEXT NOT NULL,
+                window TEXT NOT NULL,
+                count INTEGER NOT NULL DEFAULT 0,
+                first_request_at REAL NOT NULL,
+                PRIMARY KEY (key, window)
+            )
         """)
 
+        # ── Migrate existing jobs table if needed ──
+        existing_cols = {row[1] for row in conn.execute("PRAGMA table_info(jobs)").fetchall()}
+        new_cols = {
+            "ip_address": "ALTER TABLE jobs ADD COLUMN ip_address TEXT DEFAULT ''",
+            "user_agent": "ALTER TABLE jobs ADD COLUMN user_agent TEXT DEFAULT ''",
+            "input_image_path": "ALTER TABLE jobs ADD COLUMN input_image_path TEXT",
+            "error_message": "ALTER TABLE jobs ADD COLUMN error_message TEXT DEFAULT ''",
+            "stripe_checkout_session_id": "ALTER TABLE jobs ADD COLUMN stripe_checkout_session_id TEXT",
+            "stripe_payment_status": "ALTER TABLE jobs ADD COLUMN stripe_payment_status TEXT DEFAULT ''",
+            "s3_full_key": "ALTER TABLE jobs ADD COLUMN s3_full_key TEXT",
+            "s3_preview_key": "ALTER TABLE jobs ADD COLUMN s3_preview_key TEXT",
+            "s3_image_key": "ALTER TABLE jobs ADD COLUMN s3_image_key TEXT",
+        }
+        for col, sql in new_cols.items():
+            if col not in existing_cols:
+                try:
+                    conn.execute(sql)
+                    print(f"  DB migration: added '{col}' column")
+                except Exception:
+                    pass
 
-def create_job(email: str, animation_type: str, original_image_path: str) -> str:
+        # Indexes
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_email ON jobs(email)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_stripe ON jobs(stripe_checkout_session_id)")
+
+
+# ---------------------------------------------------------------------------
+# Job CRUD
+# ---------------------------------------------------------------------------
+
+def create_job(email: str, ip_address: str = "", user_agent: str = "") -> str:
     """Create a new job and return its ID."""
     job_id = uuid.uuid4().hex[:12]
     now = time.time()
     with get_db() as conn:
         conn.execute(
-            """INSERT INTO jobs (id, email, animation_type, original_image_path, status, created_at, updated_at)
-               VALUES (?, ?, ?, ?, 'uploaded', ?, ?)""",
-            (job_id, email, animation_type, original_image_path, now, now),
+            """INSERT INTO jobs
+               (id, created_at, email, ip_address, user_agent, status, updated_at)
+               VALUES (?, ?, ?, ?, ?, 'queued', ?)""",
+            (job_id, now, email, ip_address, user_agent, now),
         )
     return job_id
 
@@ -100,7 +137,7 @@ def get_job_by_stripe_session(session_id: str) -> Optional[dict]:
     """Look up a job by Stripe checkout session ID."""
     with get_db() as conn:
         row = conn.execute(
-            "SELECT * FROM jobs WHERE stripe_session_id = ?", (session_id,)
+            "SELECT * FROM jobs WHERE stripe_checkout_session_id = ?", (session_id,)
         ).fetchone()
         if row:
             return dict(row)
@@ -114,3 +151,54 @@ def increment_download_count(job_id: str):
             "UPDATE jobs SET download_count = download_count + 1, updated_at = ? WHERE id = ?",
             (time.time(), job_id),
         )
+
+
+# ---------------------------------------------------------------------------
+# Rate Limiting helpers
+# ---------------------------------------------------------------------------
+
+def get_rate_count(key: str, window: str, window_seconds: int) -> int:
+    """
+    Get the current request count for a rate-limit key within its window.
+    Automatically resets if the window has expired.
+    """
+    now = time.time()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT count, first_request_at FROM rate_limits WHERE key = ? AND window = ?",
+            (key, window),
+        ).fetchone()
+
+        if row is None:
+            return 0
+
+        # Check if window has expired
+        if now - row["first_request_at"] > window_seconds:
+            conn.execute(
+                "DELETE FROM rate_limits WHERE key = ? AND window = ?",
+                (key, window),
+            )
+            return 0
+
+        return row["count"]
+
+
+def increment_rate_count(key: str, window: str) -> None:
+    """Increment the rate-limit counter for a key. Creates the row if needed."""
+    now = time.time()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT count, first_request_at FROM rate_limits WHERE key = ? AND window = ?",
+            (key, window),
+        ).fetchone()
+
+        if row is None:
+            conn.execute(
+                "INSERT INTO rate_limits (key, window, count, first_request_at) VALUES (?, ?, 1, ?)",
+                (key, window, now),
+            )
+        else:
+            conn.execute(
+                "UPDATE rate_limits SET count = count + 1 WHERE key = ? AND window = ?",
+                (key, window),
+            )

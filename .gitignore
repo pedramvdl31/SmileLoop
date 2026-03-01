@@ -1,8 +1,5 @@
 # SmileLoop .gitignore
 
-# LivePortrait clone (large, has its own repo)
-LivePortrait/
-
 # Python
 __pycache__/
 *.pyc
@@ -28,21 +25,27 @@ env/
 Thumbs.db
 .DS_Store
 
-# Temp job data (also in liveportrait_api/.gitignore)
-liveportrait_api/jobs/*/
-
-# Preset videos (binary – too large for git)
-liveportrait_api/presets/*.mp4
-
-# Secrets / one-off scripts
-set_runpod_env.py
+# Secrets
+.env
 
 # Runtime data
 smileloop.db
 uploads/
 outputs/
-.env
+logs/
+
+# Media / large files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.wav
+*.mp3
+
+# User uploaded images (keep the directory, ignore contents)
+public/assets/user_uploaded_images/*
+!public/assets/user_uploaded_images/.gitkeep
 
 # Test artifacts
-modal_test_output.mp4
 *.bak

@@ -36,6 +36,7 @@ from fastapi.staticfiles import StaticFiles
 from webapp.config import (
     APP_URL,
     DEFAULT_PROMPT,
+    PET_PROMPT,
     GROK_VIDEO_DURATION,
     GROK_VIDEO_MODE,
     GROK_VIDEO_RESOLUTION,
@@ -295,7 +296,7 @@ async def generate(
     )
 
     # Start background generation
-    prompt = DEFAULT_PROMPT
+    prompt = PET_PROMPT if landing_slug.strip().lower() == "pet-photos" else DEFAULT_PROMPT
     asyncio.create_task(_generate_video(job_id, contents, prompt, pipeline=pipeline))
 
     return {"job_id": job_id}
@@ -699,6 +700,74 @@ async def view_logs(n: int = 50):
     return {"logs": get_recent_logs(n)}
 
 
+# ---------------------------------------------------------------------------
+# SEO Routes: sitemap, robots.txt
+# ---------------------------------------------------------------------------
+_LANDING_SLUGS = [
+    "",
+    "baby-photos",
+    "family-photos",
+    "vintage-portraits",
+    "couple-photos",
+    "pet-photos",
+    "animate-photo",
+    "sitemap",
+]
+
+
+@app.get("/sitemap", response_class=HTMLResponse)
+async def serve_sitemap_page():
+    sitemap_path = PUBLIC_DIR / "sitemap.html"
+    if not sitemap_path.exists():
+        raise HTTPException(status_code=404)
+    html = sitemap_path.read_text(encoding="utf-8")
+    html = html.replace("{{APP_URL}}", APP_URL.rstrip("/"))
+    return HTMLResponse(html)
+
+
+from fastapi.responses import Response  # noqa: E402
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml():
+    base = APP_URL.rstrip("/")
+    urls_xml = ""
+    for slug in _LANDING_SLUGS:
+        loc = f"{base}/{slug}" if slug else f"{base}/"
+        urls_xml += (
+            f"  <url>\n"
+            f"    <loc>{loc}</loc>\n"
+            f"    <changefreq>weekly</changefreq>\n"
+            f"    <priority>{'1.0' if not slug else '0.8'}</priority>\n"
+            f"  </url>\n"
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{urls_xml}"
+        "</urlset>\n"
+    )
+    return Response(content=xml, media_type="application/xml")
+
+
+@app.get("/robots.txt")
+async def robots_txt():
+    base = APP_URL.rstrip("/")
+    txt = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /api/\n"
+        "Disallow: /uploads/\n"
+        "Disallow: /outputs/\n"
+        "\n"
+        f"Sitemap: {base}/sitemap.xml\n"
+    )
+    return Response(content=txt, media_type="text/plain")
+
+
+# ---------------------------------------------------------------------------
+# SPA Routes
+# ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_path = PUBLIC_DIR / "index.html"

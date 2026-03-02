@@ -17,6 +17,32 @@
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>😊</text></svg>">
 
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "SmileLoop",
+    "url": "https://smileloop.com",
+    "description": "Upload a photo. Watch it smile. Turn your still photos into gentle, living memories using AI.",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free preview, pay only for full HD download"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "bestRating": "5",
+      "ratingCount": "1200"
+    },
+    "sameAs": []
+  }
+  </script>
+
   <!-- Cloudflare Turnstile (explicit render mode) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -84,20 +110,15 @@
           </details>
         </div>
 
-        <!-- RIGHT COLUMN: before/after demo (desktop only) -->
+        <!-- RIGHT COLUMN: living-photo demo (desktop only) -->
         <div class="hero__right">
-          <div class="demo" id="hero-demo">
-            <div class="demo__item">
-              <img class="lp-demo-before" src="/assets/demos/default/before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
-              <span class="demo__label">Before</span>
-            </div>
-            <span class="demo__arrow">→</span>
-            <div class="demo__item">
-              <video class="lp-demo-after" autoplay loop muted playsinline>
-                <source src="/assets/demos/default/after.mp4" type="video/mp4">
-              </video>
-              <span class="demo__label">After</span>
-            </div>
+          <div class="living-photo" id="living-photo">
+            <img class="living-photo__still lp-demo-before" src="/assets/demos/default/before.jpg" alt="Original photo">
+            <video class="living-photo__video lp-demo-after" loop muted playsinline>
+              <source src="/assets/demos/default/after.mp4" type="video/mp4">
+            </video>
+            <span class="living-photo__badge" id="living-badge">Still photo</span>
+            <span class="living-photo__hint" id="living-hint">Watch it come to life&hellip;</span>
           </div>
         </div>
 
@@ -141,7 +162,7 @@
     </section>
 
     <footer class="footer">
-      <p>&copy; 2026 SmileLoop. All rights reserved.</p>
+      <p>&copy; 2026 SmileLoop. All rights reserved. &nbsp;&middot;&nbsp; <a href="/sitemap" style="color: inherit; text-decoration: underline;">Explore all pages</a></p>
     </footer>
   </div>
 

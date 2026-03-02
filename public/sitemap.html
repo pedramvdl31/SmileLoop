@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmileLoop – All Pages &amp; Services | Sitemap</title>
+  <meta name="description" content="Explore everything SmileLoop offers. Bring baby photos, family memories, vintage portraits, couple moments, and any photo to life. Find the right page for you.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{APP_URL}}/sitemap">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="SmileLoop – All Pages & Services">
+  <meta property="og:description" content="Explore everything SmileLoop offers. Animate baby photos, family memories, vintage portraits, and more.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{APP_URL}}/sitemap">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>😊</text></svg>">
+
+  <!-- JSON-LD: WebSite + CollectionPage -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "SmileLoop – All Pages & Services",
+    "description": "Explore everything SmileLoop offers. Bring photos to life with gentle animation.",
+    "url": "{{APP_URL}}/sitemap",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "SmileLoop",
+      "url": "{{APP_URL}}",
+      "description": "Upload a photo. Watch it smile. Turn still photos into gentle, living memories.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "{{APP_URL}}/sitemap?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    "mainEntity": {
+      "@type": "ItemList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Bring Your Photo to Life",
+          "url": "{{APP_URL}}/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Animate Baby & Newborn Photos",
+          "url": "{{APP_URL}}/baby-photos"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Animate Family Photos",
+          "url": "{{APP_URL}}/family-photos"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Restore & Animate Vintage Portraits",
+          "url": "{{APP_URL}}/vintage-portraits"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Animate Couple Photos",
+          "url": "{{APP_URL}}/couple-photos"
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "name": "Animate Pet Photos",
+          "url": "{{APP_URL}}/pet-photos"
+        },
+        {
+          "@type": "ListItem",
+          "position": 7,
+          "name": "Animate Any Photo",
+          "url": "{{APP_URL}}/animate-photo"
+        }
+      ]
+    }
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-bg: #FDFBF7;
+      --color-bg-alt: #F7F4EF;
+      --color-text: #1D1D1F;
+      --color-text-soft: #6E6E73;
+      --color-text-muted: #A1A1A6;
+      --color-accent: #2D2D2D;
+      --color-border: #E8E5DF;
+      --color-card-bg: #FFFFFF;
+      --shadow-card: 0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 50px;
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --max-width: 900px;
+    }
+
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    .nav { position: sticky; top: 0; background: rgba(253,251,247,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--color-border); z-index: 100; padding: 14px 24px; }
+    .nav__inner { max-width: var(--max-width); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .nav__logo { font-size: 1.2rem; font-weight: 700; color: var(--color-text); }
+    .nav__logo span { font-weight: 300; }
+    .nav__back { font-size: 0.85rem; color: var(--color-text-soft); display: flex; align-items: center; gap: 4px; }
+    .nav__back:hover { color: var(--color-text); text-decoration: none; }
+
+    /* Layout */
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .sitemap-hero {
+      padding: 56px 0 40px;
+      text-align: center;
+    }
+    .sitemap-hero h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+    .sitemap-hero p {
+      font-size: 1.1rem;
+      color: var(--color-text-soft);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* Search */
+    .search-bar {
+      max-width: 480px;
+      margin: 28px auto 0;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 14px 20px 14px 46px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      font-size: 0.95rem;
+      font-family: var(--font-main);
+      background: var(--color-card-bg);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .search-bar input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(45,45,45,0.06);
+    }
+    .search-bar__icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    /* Page grid */
+    .pages-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      padding: 40px 0 24px;
+    }
+    @media (min-width: 600px) {
+      .pages-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 900px) {
+      .pages-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    /* Page card */
+    .page-card {
+      background: var(--color-card-bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform var(--transition), box-shadow var(--transition);
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 12px 32px rgba(0,0,0,0.10);
+      text-decoration: none;
+    }
+    .page-card__icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+    .page-card__title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .page-card__desc {
+      font-size: 0.85rem;
+      color: var(--color-text-soft);
+      line-height: 1.55;
+    }
+    .page-card__cta {
+      margin-top: auto;
+      padding-top: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .page-card__tag {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: var(--color-bg-alt);
+      color: var(--color-text-muted);
+    }
+    .page-card__tag--popular {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+    .page-card__tag--new {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .page-card[data-hidden="true"] { display: none; }
+
+    /* No results */
+    .no-results {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--color-text-muted);
+      font-size: 0.95rem;
+      display: none;
+    }
+    .no-results.is-visible { display: block; }
+
+    /* SEO sections */
+    .seo-section {
+      padding: 48px 0;
+      border-top: 1px solid var(--color-border);
+    }
+    .seo-section h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .seo-section p, .seo-section li {
+      font-size: 0.9rem;
+      color: var(--color-text-soft);
+      line-height: 1.7;
+      max-width: 680px;
+    }
+    .seo-section ul {
+      list-style: none;
+      padding: 0;
+    }
+    .seo-section li {
+      padding: 6px 0;
+    }
+    .seo-section li a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .seo-section li a::before {
+      content: '→';
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* FAQ accordion */
+    .faq-list { max-width: 680px; }
+    .faq-item {
+      border-bottom: 1px solid var(--color-border);
+      padding: 16px 0;
+    }
+    .faq-item summary {
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after { content: '+'; font-size: 1.2rem; color: var(--color-text-muted); transition: transform var(--transition); }
+    .faq-item[open] summary::after { transform: rotate(45deg); }
+    .faq-item p {
+      margin-top: 10px;
+      font-size: 0.88rem;
+      color: var(--color-text-soft);
+      line-height: 1.65;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 32px 0;
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .footer a { color: var(--color-text-soft); }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">Smile<span>Loop</span></a>
+      <a href="/" class="nav__back">← Back to app</a>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- Hero -->
+    <section class="sitemap-hero">
+      <h1>Explore SmileLoop</h1>
+      <p>Find the perfect page for your photo. Whether it's a baby's first smile, a vintage portrait, or a fun selfie — we've got a page for that.</p>
+
+      <div class="search-bar">
+        <span class="search-bar__icon">🔍</span>
+        <input type="text" id="sitemap-search" placeholder="Search pages… (e.g. baby, family, old photo)" autocomplete="off">
+      </div>
+    </section>
+
+    <!-- Page cards -->
+    <section class="pages-grid" id="pages-grid">
+
+      <a href="/" class="page-card" data-keywords="home main upload photo smile animate bring to life default">
+        <span class="page-card__tag page-card__tag--popular">Popular</span>
+        <span class="page-card__icon">😊</span>
+        <span class="page-card__title">Bring Your Photo to Life</span>
+        <span class="page-card__desc">Upload any portrait photo and watch it come to life with a gentle animation. The classic SmileLoop experience.</span>
+        <span class="page-card__cta">Try it now →</span>
+      </a>
+
+      <a href="/baby-photos" class="page-card" data-keywords="baby newborn infant first smile hospital tiny yawn nursery toddler child">
+        <span class="page-card__tag page-card__tag--popular">Popular</span>
+        <span class="page-card__icon">👶</span>
+        <span class="page-card__title">Baby &amp; Newborn Photos</span>
+        <span class="page-card__desc">Turn your baby's first photo into a living memory. See that tiny smile, those little eyes opening — alive again.</span>
+        <span class="page-card__cta">Animate a baby photo →</span>
+      </a>
+
+      <a href="/family-photos" class="page-card" data-keywords="family group holiday christmas thanksgiving reunion together parents kids children siblings">
+        <span class="page-card__icon">👨‍👩‍👧</span>
+        <span class="page-card__title">Family Moments</span>
+        <span class="page-card__desc">Bring your favorite family photo back to life. Holiday dinners, backyard afternoons, everyone together.</span>
+        <span class="page-card__cta">Animate a family photo →</span>
+      </a>
+
+      <a href="/vintage-portraits" class="page-card" data-keywords="vintage old grandma grandpa grandfather grandmother portrait black white bw restore colorize nostalgia 1960 1970 1950 retro antique">
+        <span class="page-card__tag page-card__tag--new">New</span>
+        <span class="page-card__icon">🖼️</span>
+        <span class="page-card__title">Vintage &amp; Old Portraits</span>
+        <span class="page-card__desc">Restore and animate old black &amp; white photos. See grandma smile again. Our AI colorizes and brings them to life.</span>
+        <span class="page-card__cta">Restore an old photo →</span>
+      </a>
+
+      <a href="/couple-photos" class="page-card" data-keywords="couple romantic wedding anniversary love boyfriend girlfriend husband wife engagement date valentine">
+        <span class="page-card__icon">💑</span>
+        <span class="page-card__title">Couple &amp; Romantic Photos</span>
+        <span class="page-card__desc">Relive your favorite moment together. Wedding photos, first dates, quiet moments — gently alive again.</span>
+        <span class="page-card__cta">Animate your photo →</span>
+      </a>
+
+      <a href="/pet-photos" class="page-card" data-keywords="pet dog cat puppy kitten bunny rabbit animal furry companion memorial paw golden retriever labrador">
+        <span class="page-card__tag page-card__tag--new">New</span>
+        <span class="page-card__icon">🐾</span>
+        <span class="page-card__title">Pet Photos</span>
+        <span class="page-card__desc">See your furry friend move again. Dogs, cats, bunnies — upload a photo of your pet and watch them come to life.</span>
+        <span class="page-card__cta">Animate your pet →</span>
+      </a>
+
+      <a href="/animate-photo" class="page-card" data-keywords="fun selfie meme yearbook any photo silly cool animate upload general">
+        <span class="page-card__icon">😄</span>
+        <span class="page-card__title">Animate Any Photo</span>
+        <span class="page-card__desc">Upload any photo and watch it smile. Selfies, memes, yearbook photos — fun, fast, and surprisingly cool.</span>
+        <span class="page-card__cta">Try it for fun →</span>
+      </a>
+
+    </section>
+
+    <div class="no-results" id="no-results">
+      <p>No pages match your search. Try different keywords or <a href="/">go to the homepage</a>.</p>
+    </div>
+
+    <!-- SEO: How it works -->
+    <section class="seo-section">
+      <h2>How SmileLoop Works</h2>
+      <p>SmileLoop uses advanced AI to transform still photos into gentle, living animations. Upload a portrait, and our technology adds natural micro-movements — a smile, a blink, a subtle head turn — creating a short video that feels alive.</p>
+      <p style="margin-top: 12px;">The process takes about 30 seconds. Your photo is processed securely and deleted from our servers after delivery. No account needed, no subscription required.</p>
+    </section>
+
+    <!-- SEO: Use cases -->
+    <section class="seo-section">
+      <h2>Popular Use Cases</h2>
+      <ul>
+        <li><a href="/baby-photos">Animate your baby's first hospital photo</a></li>
+        <li><a href="/family-photos">Bring a holiday family photo to life</a></li>
+        <li><a href="/vintage-portraits">Restore and animate a grandparent's old portrait</a></li>
+        <li><a href="/couple-photos">Create a living memory from your wedding photo</a></li>
+        <li><a href="/pet-photos">Bring your dog, cat, or pet photo to life</a></li>
+        <li><a href="/animate-photo">Turn a yearbook photo or selfie into a fun animation</a></li>
+        <li><a href="/">Make any portrait photo smile and move</a></li>
+      </ul>
+    </section>
+
+    <!-- SEO: FAQ -->
+    <section class="seo-section">
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>What types of photos work best?</summary>
+          <p>SmileLoop works best with clear, front-facing portrait photos. JPEG and PNG formats are supported. The face should be well-lit and not too small in the frame. Group photos work too — each visible face may animate.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Is my photo kept private?</summary>
+          <p>Yes. Your photo is processed securely and deleted from our servers after your video is delivered. We never share, sell, or use your photos for any other purpose.</p>
+        </details>
+        <details class="faq-item">
+          <summary>How long does it take?</summary>
+          <p>Most photos are processed in about 30 seconds. Vintage portraits that need colorization may take up to 60 seconds since the AI restores color before animating.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Do I need an account or subscription?</summary>
+          <p>No. SmileLoop is pay-per-use. Upload a photo, see a free preview, and only pay if you want the full high-quality download. No accounts, no recurring charges.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Can I animate old black and white photos?</summary>
+          <p>Yes! Our <a href="/vintage-portraits">vintage portraits</a> page uses a special pipeline that colorizes black &amp; white photos before animating them. The AI adds realistic color tones and then brings the face to life.</p>
+        </details>
+        <details class="faq-item">
+          <summary>What is the output format?</summary>
+          <p>SmileLoop generates a short MP4 video (typically 5 seconds) at high resolution. The video loops smoothly and can be shared on social media, sent via message, or saved to your device.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- SEO: All Pages directory -->
+    <section class="seo-section">
+      <h2>All Pages</h2>
+      <ul>
+        <li><a href="/">Home – Bring Your Photo to Life</a></li>
+        <li><a href="/baby-photos">Baby &amp; Newborn Photo Animation</a></li>
+        <li><a href="/family-photos">Family Photo Animation</a></li>
+        <li><a href="/vintage-portraits">Vintage Portrait Restoration &amp; Animation</a></li>
+        <li><a href="/couple-photos">Couple &amp; Romantic Photo Animation</a></li>
+        <li><a href="/pet-photos">Pet Photo Animation</a></li>
+        <li><a href="/animate-photo">Animate Any Photo</a></li>
+        <li><a href="/sitemap">Site Directory (this page)</a></li>
+      </ul>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 SmileLoop. All rights reserved. &nbsp;|&nbsp; <a href="/">Home</a> &nbsp;|&nbsp; <a href="/sitemap">Sitemap</a></p>
+  </footer>
+
+  <script>
+    // Live search / filter
+    (function () {
+      var input = document.getElementById('sitemap-search');
+      var cards = document.querySelectorAll('.page-card');
+      var noResults = document.getElementById('no-results');
+
+      if (!input) return;
+
+      input.addEventListener('input', function () {
+        var q = this.value.toLowerCase().trim();
+        var visible = 0;
+
+        cards.forEach(function (card) {
+          var text = (card.textContent + ' ' + (card.getAttribute('data-keywords') || '')).toLowerCase();
+          var match = !q || text.indexOf(q) !== -1;
+          card.setAttribute('data-hidden', match ? 'false' : 'true');
+          if (match) visible++;
+        });
+
+        noResults.classList.toggle('is-visible', visible === 0);
+      });
+
+      // Support ?q= query param
+      var params = new URLSearchParams(window.location.search);
+      var q = params.get('q');
+      if (q) {
+        input.value = q;
+        input.dispatchEvent(new Event('input'));
+      }
+    })();
+  </script>
+</body>
+</html>

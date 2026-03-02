@@ -397,6 +397,146 @@ img, video { max-width: 100%; height: auto; display: block; }
   }
 }
 
+/* ── Living Photo ── */
+.living-photo {
+  position: relative;
+  aspect-ratio: 1;
+  max-width: 380px;
+  margin: 0 auto;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-bg-alt);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.living-photo__still,
+.living-photo__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.living-photo__still {
+  z-index: 1;
+}
+
+.living-photo__video {
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.living-photo.is-alive .living-photo__video {
+  opacity: 1;
+}
+
+/* Breathing glow ring while still */
+.living-photo::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: calc(var(--radius-lg) + 3px);
+  border: 2px solid transparent;
+  z-index: 4;
+  pointer-events: none;
+  transition: border-color 0.6s;
+}
+
+.living-photo:not(.is-alive)::after {
+  animation: glow-breathe 2.5s ease-in-out infinite;
+}
+
+@keyframes glow-breathe {
+  0%, 100% { border-color: rgba(245, 166, 35, 0.0); }
+  50%      { border-color: rgba(245, 166, 35, 0.35); }
+}
+
+.living-photo.is-alive::after {
+  border-color: rgba(52, 199, 89, 0.4);
+  animation: none;
+}
+
+/* Sparkle burst on transition */
+.living-photo__sparkle {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.5) 0%, transparent 60%);
+  opacity: 0;
+}
+
+.living-photo__sparkle.pop {
+  animation: sparkle-pop 0.8s ease-out forwards;
+}
+
+@keyframes sparkle-pop {
+  0%   { opacity: 0.9; transform: scale(0.6); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+/* Badge pill */
+.living-photo__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: rgba(0,0,0,0.40);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 6;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.living-photo.is-alive .living-photo__badge {
+  background: rgba(52, 199, 89, 0.80);
+}
+
+/* Hint text */
+.living-photo__hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(0,0,0,0.35);
+  padding: 6px 18px;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 6;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.5s, transform 0.5s;
+  animation: hint-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+.living-photo.is-alive .living-photo__hint {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
+  pointer-events: none;
+  animation: none;
+}
+
 /* ----- How It Works ----- */
 .steps {
   display: flex;

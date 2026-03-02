@@ -145,4 +145,23 @@ var LANDING_PAGES = {
     trustBadges: ['🔒 100% Private & Deleted', '⚡ Ready in ~30 sec', '😄 Works with any face'],
     socialProof: { rating: '4.9/5', stars: '★★★★★' },
   },
+
+  /* ─────────────────────────────────────────────────── */
+  /*  🐾 PET PHOTOS                                     */
+  /* ─────────────────────────────────────────────────── */
+  'pet-photos': {
+    slug: 'pet-photos',
+    pageTitle: 'SmileLoop – Bring Your Pet Photo to Life',
+    metaDescription: 'Turn your favorite pet photo into a living moment. Watch your dog wag, your cat blink, or your bunny twitch — alive again.',
+    headline: 'Watch Your Pet Come to Life.',
+    subheadline: 'Upload a photo of your furry friend. See them move again.',
+    testimonial: {
+      quote: '"I animated a photo of my golden retriever who passed last year. When he wagged his tail, I completely lost it."',
+      author: 'Rachel M., dog mom',
+    },
+    emotionalText: 'That look they gave you.<br>The head tilt.<br>The soft eyes.<br><br>One more moment with them.',
+    // demoBefore / demoAfter auto-resolved from /assets/demos/pet-photos/
+    trustBadges: ['\uD83D\uDD12 100% Private & Deleted', '\u26A1 Ready in ~30 sec', '\uD83D\uDC3E Works with dogs, cats & more'],
+    socialProof: { rating: '4.9/5', stars: '★★★★★' },
+  },
 };

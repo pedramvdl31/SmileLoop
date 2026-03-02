@@ -107,3 +107,12 @@ DEFAULT_PROMPT = os.environ.get(
     "seamless loop, but no spoken words.",
 )
 
+PET_PROMPT = os.environ.get(
+    "PET_PROMPT",
+    "this app gently brings photos to life with subtle natural human movement, "
+    "interpret the scene and continue whatever feels natural for the moment, "
+    "warm realistic emotion, respectful expression change, cinematic portrait motion, "
+    "seamless loop, but no spoken words."
+    "happy animals.",
+)
+

@@ -197,6 +197,72 @@
 
     // Add slug as body data-attribute for potential CSS theming
     document.body.setAttribute('data-landing', data.slug || 'home');
+
+    // Hide demo sections on default homepage (no demo assets yet)
+    var heroRight = document.querySelector('.hero__right');
+    var mobileExample = document.getElementById('see-example-mobile');
+    if (!data.slug) {
+      if (heroRight) heroRight.style.display = 'none';
+      if (mobileExample) mobileExample.style.display = 'none';
+    } else {
+      if (heroRight) heroRight.style.display = '';
+      if (mobileExample) mobileExample.style.display = '';
+    }
+  }
+
+  // ─── Living Photo (hero demo) ───────────────────────
+  function initLivingPhoto() {
+    var card = document.getElementById('living-photo');
+    if (!card) return;
+
+    var video = card.querySelector('.living-photo__video');
+    var badge = document.getElementById('living-badge');
+    var alive = false;
+    var cycleTimer;
+
+    // Add sparkle element
+    var sparkle = document.createElement('div');
+    sparkle.className = 'living-photo__sparkle';
+    card.appendChild(sparkle);
+
+    function bringToLife() {
+      if (alive) return;
+      alive = true;
+      video.currentTime = 0;
+      video.play();
+      card.classList.add('is-alive');
+      badge.textContent = '\u2728 Alive';
+      sparkle.classList.remove('pop');
+      void sparkle.offsetWidth;
+      sparkle.classList.add('pop');
+    }
+
+    function goStill() {
+      if (!alive) return;
+      alive = false;
+      card.classList.remove('is-alive');
+      badge.textContent = 'Still photo';
+      // Keep video playing underneath so transition back is smooth
+    }
+
+    function toggle() {
+      if (alive) goStill(); else bringToLife();
+    }
+
+    // Click to toggle
+    card.addEventListener('click', function () {
+      clearInterval(cycleTimer);
+      toggle();
+      // Restart auto-cycle after manual interaction
+      cycleTimer = setInterval(toggle, alive ? 9000 : 3000);
+    });
+
+    // Auto bring-to-life after 3s, then cycle
+    // Show still for 3s, alive for 9s
+    setTimeout(function () {
+      bringToLife();
+      cycleTimer = setInterval(toggle, 9000);
+    }, 3000);
   }
 
   // ─── Init ───────────────────────────────────────────
@@ -206,6 +272,7 @@
 
     // Apply landing page content first (before anything shows)
     applyLandingContent();
+    initLivingPhoto();
 
     // Load config
     try {

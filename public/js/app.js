@@ -131,6 +131,15 @@
     var data = LANDING_PAGES[slug] || LANDING_PAGES._default;
     state.landingSlug = data.slug || '';
 
+    // ── Auto-resolve demo asset paths from slug ──
+    // Convention: /assets/demos/{folder}/before.jpg + after.mp4
+    // Falls back to /assets/demos/default/ if category folder is empty
+    var demoFolder = data.slug ? '/assets/demos/' + data.slug : '/assets/demos/default';
+    var demoBefore = data.demoBefore || demoFolder + '/before.jpg';
+    var demoAfter  = data.demoAfter  || demoFolder + '/after.mp4';
+    var defaultBefore = '/assets/demos/default/before.jpg';
+    var defaultAfter  = '/assets/demos/default/after.mp4';
+
     // Page title & meta
     document.title = data.pageTitle;
     var metaDesc = document.querySelector('meta[name="description"]');
@@ -145,7 +154,7 @@
 
     // Testimonial
     var testimonial = $('#lp-testimonial');
-    if (testimonial) testimonial.innerHTML = data.testimonial.quote + ' — ' + data.testimonial.author;
+    if (testimonial) testimonial.innerHTML = data.testimonial.quote + ' \u2014 ' + data.testimonial.author;
 
     // Social proof
     var stars = $('#lp-stars');
@@ -161,13 +170,29 @@
       trustRow.innerHTML = data.trustBadges.map(function (b) { return '<span>' + b + '</span>'; }).join('');
     }
 
-    // Demo before / after (images & videos)
+    // Demo before images — try category, fallback to default
     $$('.lp-demo-before').forEach(function (el) {
-      el.src = data.demoBefore;
+      el.src = demoBefore;
+      el.onerror = function () {
+        if (el.src.indexOf('/default/') === -1) {
+          el.src = defaultBefore;
+        }
+      };
     });
+
+    // Demo after videos — try category, fallback to default
     $$('.lp-demo-after').forEach(function (el) {
       var source = el.querySelector('source');
-      if (source) { source.src = data.demoAfter; el.load(); }
+      if (source) {
+        source.src = demoAfter;
+        el.load();
+        el.onerror = function () {
+          if (source.src.indexOf('/default/') === -1) {
+            source.src = defaultAfter;
+            el.load();
+          }
+        };
+      }
     });
 
     // Add slug as body data-attribute for potential CSS theming
@@ -370,6 +395,7 @@
     formData.append('source_image', state.selectedFile);
     formData.append('email', state.email);
     formData.append('cf_turnstile_token', state.turnstileToken);
+    formData.append('landing_slug', state.landingSlug || '');
 
     try {
       const resp = await fetch('/api/generate', {
@@ -458,6 +484,60 @@
   }
 
   // ─── Status Polling ─────────────────────────────────
+
+  // Step ordering for colorize pipeline
+  var COLORIZE_STEPS = ['analyzing', 'colorizing', 'animating', 'finalizing'];
+
+  // Friendly titles/subtitles per step
+  var STEP_MESSAGES = {
+    analyzing:  { title: 'Studying your photo', subtitle: 'Looking at details, lighting, and faces…' },
+    colorizing: { title: 'Restoring colors', subtitle: 'Carefully adding natural, vivid colors…' },
+    animating:  { title: 'Bringing it to life', subtitle: 'Creating gentle, natural movement…' },
+    finalizing: { title: 'Almost there', subtitle: 'Polishing your video…' },
+    generating: { title: 'Your photo is coming to life', subtitle: 'This usually takes about 30 seconds.' },
+  };
+
+  function updateProcessingUI(pipeline, step) {
+    var title = $('#processing-title');
+    var subtitle = $('#processing-subtitle');
+    var stepsEl = $('#processing-steps');
+
+    // Standard pipeline — simple message, no steps
+    if (pipeline !== 'colorize') {
+      if (stepsEl) stepsEl.style.display = 'none';
+      var msg = STEP_MESSAGES[step] || STEP_MESSAGES.generating;
+      if (title) title.innerHTML = msg.title + '<span class="processing__dots"><span>.</span><span>.</span><span>.</span></span>';
+      if (subtitle) subtitle.textContent = msg.subtitle;
+      return;
+    }
+
+    // Colorize pipeline — show progress steps
+    if (stepsEl) stepsEl.style.display = 'flex';
+
+    var msg = STEP_MESSAGES[step] || STEP_MESSAGES.analyzing;
+    if (title) title.innerHTML = msg.title + '<span class="processing__dots"><span>.</span><span>.</span><span>.</span></span>';
+    if (subtitle) subtitle.textContent = msg.subtitle;
+
+    var currentIdx = COLORIZE_STEPS.indexOf(step);
+    COLORIZE_STEPS.forEach(function (s, i) {
+      var el = stepsEl.querySelector('[data-step="' + s + '"]');
+      if (!el) return;
+      var statusEl = el.querySelector('.processing-step__status');
+
+      el.classList.remove('is-active', 'is-done', 'is-pending');
+      if (i < currentIdx) {
+        el.classList.add('is-done');
+        if (statusEl) statusEl.textContent = '✓';
+      } else if (i === currentIdx) {
+        el.classList.add('is-active');
+        if (statusEl) statusEl.textContent = '';
+      } else {
+        el.classList.add('is-pending');
+        if (statusEl) statusEl.textContent = '';
+      }
+    });
+  }
+
   function startPolling() {
     if (state.pollTimer) clearInterval(state.pollTimer);
 
@@ -467,6 +547,11 @@
         if (!resp.ok) throw new Error('Status check failed.');
 
         const data = await resp.json();
+
+        // Update progress UI
+        if (data.status === 'processing' || data.status === 'queued') {
+          updateProcessingUI(data.pipeline || 'standard', data.progress_step || '');
+        }
 
         if (data.status === 'preview_ready') {
           clearInterval(state.pollTimer);

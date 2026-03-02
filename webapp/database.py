@@ -82,6 +82,8 @@ def init_db():
             "s3_full_key": "ALTER TABLE jobs ADD COLUMN s3_full_key TEXT",
             "s3_preview_key": "ALTER TABLE jobs ADD COLUMN s3_preview_key TEXT",
             "s3_image_key": "ALTER TABLE jobs ADD COLUMN s3_image_key TEXT",
+            "pipeline": "ALTER TABLE jobs ADD COLUMN pipeline TEXT DEFAULT 'standard'",
+            "progress_step": "ALTER TABLE jobs ADD COLUMN progress_step TEXT DEFAULT ''",
         }
         for col, sql in new_cols.items():
             if col not in existing_cols:

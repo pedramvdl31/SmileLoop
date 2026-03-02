@@ -2,6 +2,31 @@
    SmileLoop – Landing Page Variants
    Dynamic content driven by URL slug.
    Add new categories here — zero code changes elsewhere.
+   =====================================================
+
+   DEMO ASSET NAMING CONVENTION
+   ────────────────────────────
+   All demo files live under:  /public/assets/demos/{slug}/
+
+   Required files per folder:
+     before.jpg   (or before.png)   — the "before" still image
+     after.mp4                      — the "after" animated video
+
+   Optional additional demos (shown in a gallery row):
+     before-2.jpg  / after-2.mp4
+     before-3.jpg  / after-3.mp4
+     … up to before-5 / after-5
+
+   Fallback: if a category folder is empty, the app
+   automatically loads files from  /public/assets/demos/default/
+
+   Example:
+     public/assets/demos/default/before.jpg
+     public/assets/demos/default/after.mp4
+     public/assets/demos/baby-photos/before.jpg
+     public/assets/demos/baby-photos/after.mp4
+     public/assets/demos/baby-photos/before-2.jpg
+     public/assets/demos/baby-photos/after-2.mp4
    ===================================================== */
 
 // eslint-disable-next-line no-unused-vars
@@ -21,8 +46,7 @@ var LANDING_PAGES = {
       author: 'Sarah K.',
     },
     emotionalText: 'Sometimes all it takes is a blink.<br>A smile.<br>A small movement.<br><br>And it feels warm again.',
-    demoBefore: '/assets/demo-before.jpg',
-    demoAfter: '/assets/demo-after.mp4',
+    // demoBefore / demoAfter auto-resolved from /assets/demos/default/
     trustBadges: ['🔒 100% Private & Deleted', '⚡ Ready in ~30 sec', '💳 No subscription'],
     socialProof: { rating: '4.9/5', stars: '★★★★★' },
   },
@@ -41,8 +65,7 @@ var LANDING_PAGES = {
       author: 'Emily R., new mom',
     },
     emotionalText: 'That tiny yawn.<br>Those little eyes opening.<br>A first smile you almost missed.<br><br>Now it\'s alive again.',
-    demoBefore: '/assets/demo-before.jpg',
-    demoAfter: '/assets/demo-after.mp4',
+    // demoBefore / demoAfter auto-resolved from /assets/demos/baby-photos/
     trustBadges: ['🔒 100% Private & Deleted', '⚡ Ready in ~30 sec', '💳 No subscription'],
     socialProof: { rating: '4.9/5', stars: '★★★★★' },
   },
@@ -61,8 +84,7 @@ var LANDING_PAGES = {
       author: 'David L.',
     },
     emotionalText: 'A holiday dinner.<br>A backyard afternoon.<br>Everyone together, just for a moment.<br><br>Now it moves again.',
-    demoBefore: '/assets/demo-before.jpg',
-    demoAfter: '/assets/demo-after.mp4',
+    // demoBefore / demoAfter auto-resolved from /assets/demos/family-photos/
     trustBadges: ['🔒 100% Private & Deleted', '⚡ Ready in ~30 sec', '🎁 Perfect gift'],
     socialProof: { rating: '4.9/5', stars: '★★★★★' },
   },
@@ -81,8 +103,7 @@ var LANDING_PAGES = {
       author: 'Maria T.',
     },
     emotionalText: 'A faded portrait.<br>A face you haven\'t seen in years.<br>A smile you almost forgot.<br><br>Now it\'s back.',
-    demoBefore: '/assets/demo-before.jpg',
-    demoAfter: '/assets/demo-after.mp4',
+    // demoBefore / demoAfter auto-resolved from /assets/demos/vintage-portraits/
     trustBadges: ['🔒 100% Private & Deleted', '⚡ Ready in ~30 sec', '🖼️ Works with old photos'],
     socialProof: { rating: '4.9/5', stars: '★★★★★' },
   },
@@ -101,8 +122,7 @@ var LANDING_PAGES = {
       author: 'James & Sofia',
     },
     emotionalText: 'A first date.<br>A wedding day.<br>A quiet moment together.<br><br>Now it breathes again.',
-    demoBefore: '/assets/demo-before.jpg',
-    demoAfter: '/assets/demo-after.mp4',
+    // demoBefore / demoAfter auto-resolved from /assets/demos/couple-photos/
     trustBadges: ['🔒 100% Private & Deleted', '⚡ Ready in ~30 sec', '💝 Perfect for anniversaries'],
     socialProof: { rating: '4.9/5', stars: '★★★★★' },
   },
@@ -121,8 +141,7 @@ var LANDING_PAGES = {
       author: 'Alex P.',
     },
     emotionalText: 'A selfie.<br>A meme.<br>An old yearbook photo.<br><br>Just upload it. You\'ll see.',
-    demoBefore: '/assets/demo-before.jpg',
-    demoAfter: '/assets/demo-after.mp4',
+    // demoBefore / demoAfter auto-resolved from /assets/demos/animate-photo/
     trustBadges: ['🔒 100% Private & Deleted', '⚡ Ready in ~30 sec', '😄 Works with any face'],
     socialProof: { rating: '4.9/5', stars: '★★★★★' },
   },

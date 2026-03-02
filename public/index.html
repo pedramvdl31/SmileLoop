@@ -70,13 +70,13 @@
             <summary>See an example</summary>
             <div class="demo demo--compact">
               <div class="demo__item">
-                <img class="lp-demo-before" src="/assets/demo-before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
+                <img class="lp-demo-before" src="/assets/demos/default/before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
                 <span class="demo__label">Before</span>
               </div>
               <span class="demo__arrow">→</span>
               <div class="demo__item">
                 <video class="lp-demo-after" autoplay loop muted playsinline>
-                  <source src="/assets/demo-after.mp4" type="video/mp4">
+                  <source src="/assets/demos/default/after.mp4" type="video/mp4">
                 </video>
                 <span class="demo__label">After</span>
               </div>
@@ -88,13 +88,13 @@
         <div class="hero__right">
           <div class="demo" id="hero-demo">
             <div class="demo__item">
-              <img class="lp-demo-before" src="/assets/demo-before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
+              <img class="lp-demo-before" src="/assets/demos/default/before.jpg" alt="Original photo" onerror="this.parentElement.innerHTML='<div style=&quot;aspect-ratio:1;background:var(--color-bg-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.4&quot;>🖼️</div>'">
               <span class="demo__label">Before</span>
             </div>
             <span class="demo__arrow">→</span>
             <div class="demo__item">
               <video class="lp-demo-after" autoplay loop muted playsinline>
-                <source src="/assets/demo-after.mp4" type="video/mp4">
+                <source src="/assets/demos/default/after.mp4" type="video/mp4">
               </video>
               <span class="demo__label">After</span>
             </div>
@@ -156,8 +156,32 @@
   <div id="page-processing" class="page-section">
     <section class="processing container">
       <div class="loader"></div>
-      <h2 class="text-section-title">Your photo is coming to life<span class="processing__dots"><span>.</span><span>.</span><span>.</span></span></h2>
-      <p class="text-body" style="margin-top: 12px;">This usually takes about 30 seconds.</p>
+      <h2 class="text-section-title" id="processing-title">Your photo is coming to life<span class="processing__dots"><span>.</span><span>.</span><span>.</span></span></h2>
+      <p class="text-body" style="margin-top: 12px;" id="processing-subtitle">This usually takes about 30 seconds.</p>
+
+      <!-- Progress steps (shown for multi-step pipelines like colorize) -->
+      <div class="processing-steps" id="processing-steps" style="display: none;">
+        <div class="processing-step" data-step="analyzing">
+          <span class="processing-step__icon">🔍</span>
+          <span class="processing-step__label">Analyzing your photo</span>
+          <span class="processing-step__status"></span>
+        </div>
+        <div class="processing-step" data-step="colorizing">
+          <span class="processing-step__icon">🎨</span>
+          <span class="processing-step__label">Restoring colors</span>
+          <span class="processing-step__status"></span>
+        </div>
+        <div class="processing-step" data-step="animating">
+          <span class="processing-step__icon">✨</span>
+          <span class="processing-step__label">Bringing it to life</span>
+          <span class="processing-step__status"></span>
+        </div>
+        <div class="processing-step" data-step="finalizing">
+          <span class="processing-step__icon">🎬</span>
+          <span class="processing-step__label">Finalizing your video</span>
+          <span class="processing-step__status"></span>
+        </div>
+      </div>
     </section>
   </div>
 

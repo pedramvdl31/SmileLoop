@@ -204,6 +204,7 @@ async def generate(
     source_image: UploadFile = File(..., description="Portrait photo (JPEG/PNG, max 10 MB)"),
     email: str = Form(..., description="User email (required)"),
     cf_turnstile_token: str = Form("", description="Cloudflare Turnstile token"),
+    landing_slug: str = Form("", description="Landing page slug (determines pipeline)"),
 ):
     """
     Accept image + email + Turnstile token.
@@ -252,6 +253,9 @@ async def generate(
     ext = _validate_image(contents[:16])
 
     # -- Create job --
+    # Determine pipeline based on landing slug
+    pipeline = "colorize" if landing_slug.strip().lower() == "vintage-portraits" else "standard"
+
     job_id = create_job(
         email=email,
         ip_address=client_ip,
@@ -276,7 +280,7 @@ async def generate(
                 pass
 
     # Update DB
-    update_job(job_id, input_image_path=str(image_path), status="queued", s3_image_key=s3_image_key)
+    update_job(job_id, input_image_path=str(image_path), status="queued", s3_image_key=s3_image_key, pipeline=pipeline)
 
     # Record rate-limit hit
     record_request(client_ip, email)
@@ -287,12 +291,12 @@ async def generate(
         job_id=job_id,
         method="POST",
         path="/api/generate",
-        extra={"image_size_bytes": len(contents), "image_ext": ext},
+        extra={"image_size_bytes": len(contents), "image_ext": ext, "pipeline": pipeline, "landing_slug": landing_slug},
     )
 
     # Start background generation
     prompt = DEFAULT_PROMPT
-    asyncio.create_task(_generate_video(job_id, contents, prompt))
+    asyncio.create_task(_generate_video(job_id, contents, prompt, pipeline=pipeline))
 
     return {"job_id": job_id}
 
@@ -301,22 +305,69 @@ async def generate(
 # Background generation
 # ---------------------------------------------------------------------------
 
-async def _generate_video(job_id: str, image_bytes: bytes, prompt: str):
+async def _generate_video(job_id: str, image_bytes: bytes, prompt: str, pipeline: str = "standard"):
     """Run video generation in background, then watermark."""
     update_job(job_id, status="processing")
     try:
-        await _run_provider(job_id, image_bytes, prompt)
+        await _run_provider(job_id, image_bytes, prompt, pipeline=pipeline)
     except Exception as e:
         print(f"Generation failed for job {job_id}: {e}")
         traceback.print_exc()
         update_job(job_id, status="failed", error_message=str(e)[:500])
 
 
-async def _run_provider(job_id: str, image_bytes: bytes, prompt: str):
+async def _run_provider(job_id: str, image_bytes: bytes, prompt: str, pipeline: str = "standard"):
     provider = VIDEO_PROVIDER
 
     try:
-        if provider == "kie":
+        # ── Colorize pipeline (vintage-portraits) ──
+        if pipeline == "colorize":
+            from grok_api.colorize_client import colorize_image, animate_image
+            print(f"[colorize] Starting colorize pipeline for job {job_id}")
+
+            colorize_prompt = (
+                "Colorize this black and white photograph with natural, realistic, vivid colors. "
+                "Preserve all original details, textures, and lighting."
+            )
+            video_prompt = prompt
+
+            # Step 1: Analyzing the photo
+            update_job(job_id, progress_step="analyzing")
+            import time as _time
+            await asyncio.sleep(0)  # yield to event loop so status poll can pick it up
+
+            # Step 2: Colorizing
+            update_job(job_id, progress_step="colorizing")
+            colorized_bytes, result_urls = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: colorize_image(
+                    image_bytes=image_bytes,
+                    prompt=colorize_prompt,
+                    api_key=KIE_API_KEY or None,
+                ),
+            )
+
+            # Step 3: Animating
+            update_job(job_id, progress_step="animating")
+            color_url = result_urls[0]
+            mp4_bytes = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: animate_image(
+                    image_url=color_url,
+                    prompt=video_prompt,
+                    duration=GROK_VIDEO_DURATION,
+                    resolution=GROK_VIDEO_RESOLUTION,
+                    mode=GROK_VIDEO_MODE,
+                    api_key=KIE_API_KEY or None,
+                ),
+            )
+
+            # Step 4: Finalizing
+            update_job(job_id, progress_step="finalizing")
+
+        # ── Standard pipeline ──
+        elif provider == "kie":
+            update_job(job_id, progress_step="generating")
             from grok_api.kie_client import kie_generate_video_async
             mp4_bytes = await kie_generate_video_async(
                 image_bytes=image_bytes,
@@ -329,6 +380,7 @@ async def _run_provider(job_id: str, image_bytes: bytes, prompt: str):
                 source="webapp",
             )
         else:
+            update_job(job_id, progress_step="generating")
             from grok_api.grok_client import grok_generate_video_async
             mp4_bytes = await grok_generate_video_async(
                 image_bytes=image_bytes,
@@ -339,13 +391,14 @@ async def _run_provider(job_id: str, image_bytes: bytes, prompt: str):
                 source="webapp",
             )
     except Exception as e:
-        print(f"[{provider}] Video generation failed for job {job_id}: {e}")
+        pipeline_label = f"{provider}/{pipeline}"
+        print(f"[{pipeline_label}] Video generation failed for job {job_id}: {e}")
         log_webapp_request(
             event="generation_failed",
             job_id=job_id,
             path="/api/generate",
             error=str(e),
-            extra={"provider": provider},
+            extra={"provider": provider, "pipeline": pipeline},
         )
         update_job(job_id, status="failed", error_message=str(e)[:500])
         return
@@ -397,6 +450,7 @@ async def _run_provider(job_id: str, image_bytes: bytes, prompt: str):
             "video_size_bytes": len(mp4_bytes),
             "duration": GROK_VIDEO_DURATION,
             "provider": provider,
+            "pipeline": pipeline,
         },
     )
     print(f"[{provider}] Video done for job {job_id} ({len(mp4_bytes):,} bytes)")
@@ -427,6 +481,8 @@ async def get_status(job_id: str):
         "job_id": job["id"],
         "status": job["status"],
         "error": job.get("error_message"),
+        "pipeline": job.get("pipeline", "standard"),
+        "progress_step": job.get("progress_step", ""),
     }
 
     if job["status"] in ("preview_ready", "paid"):

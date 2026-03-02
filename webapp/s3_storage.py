@@ -13,6 +13,7 @@ S3 key layout:
 
 import io
 import traceback
+from datetime import datetime, timezone
 from typing import Optional
 
 from webapp.config import (
@@ -103,9 +104,26 @@ def download_bytes(key: str) -> Optional[bytes]:
         return None
 
 
+def _date_prefix() -> str:
+    """Return today's date as YYYY-MM-DD for S3 key prefixing."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _time_suffix() -> str:
+    """Return current time as HHMMss for appending to job_id folders."""
+    return datetime.now(timezone.utc).strftime("%H%M%S")
+
+
+def _job_folder(job_id: str) -> str:
+    """Return job_id with time suffix, e.g. abc123def456_143027."""
+    return f"{job_id}_{_time_suffix()}"
+
+
 def upload_video(job_id: str, mp4_bytes: bytes, video_type: str = "full") -> Optional[str]:
     """
     Upload a video to S3.
+
+    S3 key format: videos/{YYYY-MM-DD}/{job_id}_{HHMMSS}/{video_type}.mp4
 
     Args:
         job_id: The job ID
@@ -115,7 +133,7 @@ def upload_video(job_id: str, mp4_bytes: bytes, video_type: str = "full") -> Opt
     Returns:
         S3 key if successful, None otherwise.
     """
-    key = f"videos/{job_id}/{video_type}.mp4"
+    key = f"videos/{_date_prefix()}/{_job_folder(job_id)}/{video_type}.mp4"
     if upload_bytes(key, mp4_bytes, content_type="video/mp4"):
         return key
     return None
@@ -124,6 +142,8 @@ def upload_video(job_id: str, mp4_bytes: bytes, video_type: str = "full") -> Opt
 def upload_image(job_id: str, image_bytes: bytes, ext: str = "jpg") -> Optional[str]:
     """
     Upload the source image to S3.
+
+    S3 key format: uploads/{YYYY-MM-DD}/{job_id}_{HHMMSS}/original.{ext}
 
     Args:
         job_id: The job ID
@@ -134,7 +154,7 @@ def upload_image(job_id: str, image_bytes: bytes, ext: str = "jpg") -> Optional[
         S3 key if successful, None otherwise.
     """
     mime = "image/jpeg" if ext in ("jpg", "jpeg") else "image/png"
-    key = f"uploads/{job_id}/original.{ext}"
+    key = f"uploads/{_date_prefix()}/{_job_folder(job_id)}/original.{ext}"
     if upload_bytes(key, image_bytes, content_type=mime):
         return key
     return None
